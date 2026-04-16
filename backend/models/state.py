@@ -22,6 +22,7 @@ class AgentState(TypedDict):
     retrieved_chunks: Optional[list]
     parent_sections: Optional[list]
     evidence_sufficient: Optional[bool]
+    topic_verdicts: Optional[list]
 
     # Provisioning worker
     matched_packages: Optional[list]

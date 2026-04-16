@@ -8,7 +8,7 @@ from logger import configure_logging, get_logger
 from api.chat import router as chat_router
 from api.approvals import router as approvals_router
 from db.connection import init_pool, close_pool
-
+from db.embedder import embed_texts
 configure_logging()
 log = get_logger(__name__)
 
@@ -17,7 +17,8 @@ log = get_logger(__name__)
 async def lifespan(app: FastAPI):
     log.info("Starting Agentic HR backend")
     init_pool()
-    get_compiled_graph()
+    get_compiled_graph()  # warm up graph and all nodes at startup to avoid latency on first request
+    embed_texts(["sample text"])  # warm up embedder
     log.info("PostgreSQL connection pool ready")
     yield
     log.info("Shutting down — closing connection pool")

@@ -1,6 +1,7 @@
 """
 policy_answer node — generates a cited answer using the strong LLM.
-If evidence is insufficient, produces an abstention response.
+Supports partial answers: answers topics with evidence and flags missing ones.
+Fully abstains only when zero topics have evidence.
 """
 import json
 import re
@@ -16,7 +17,9 @@ log = get_logger(__name__)
 def policy_answer_node(state: AgentState) -> AgentState:
     chunks = state.get("retrieved_chunks") or []
     parent_sections = state.get("parent_sections") or []
+    topic_verdicts = state.get("topic_verdicts") or []
 
+    # Fully abstain only when NO topic has evidence
     if not state.get("evidence_sufficient") or not chunks:
         closest = parent_sections[0] if parent_sections else None
         if closest:
@@ -24,10 +27,15 @@ def policy_answer_node(state: AgentState) -> AgentState:
                 "Abstaining — citing closest section | file=%s | heading=%r",
                 closest.get("filename"), closest.get("heading", "")[:60],
             )
+            missing_topics = [t["topic"] for t in topic_verdicts if not t.get("sufficient")]
+            missing_note = (
+                f" Topics with no evidence: {', '.join(missing_topics)}."
+                if missing_topics else ""
+            )
             state["response"] = (
                 f"I found related sections in '{closest['filename']}' "
-                f"(section: {closest['heading']}) but not enough evidence to answer confidently. "
-                "Please review that section directly."
+                f"(section: {closest['heading']}) but not enough evidence to answer confidently."
+                f"{missing_note} Please contact the HR team directly."
             )
             state["citations"] = [{
                 "document": closest["filename"],
@@ -54,9 +62,20 @@ def policy_answer_node(state: AgentState) -> AgentState:
         evidence_parts.append(f"[{c['child_id']}] Source: {filename} — {heading}\n{c['content']}")
     evidence_text = "\n\n---\n\n".join(evidence_parts)
 
+    # Format topic verdicts for the prompt
+    if topic_verdicts:
+        verdict_lines = []
+        for t in topic_verdicts:
+            status = "HAS EVIDENCE" if t.get("sufficient") else "NO EVIDENCE"
+            verdict_lines.append(f"- {t['topic']}: {status}")
+        verdict_text = "\n".join(verdict_lines)
+    else:
+        verdict_text = "No topic breakdown available — answer the full question."
+
     prompt = POLICY_ANSWER_PROMPT.format(
         question=state["message"],
         evidence=evidence_text,
+        topic_verdicts=verdict_text,
     )
     raw = strong_chat(prompt)
 

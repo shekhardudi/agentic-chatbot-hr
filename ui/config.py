@@ -4,14 +4,13 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 PERSONAS = [
     {"full_name": "Shekhar Dudi", "email": "shekhar.dudi@demo.local", "role": "Lead AI Engineer"},
-    {"full_name": "New Starter", "email": "new.starter@demo.local", "role": "Recently hired employee"},
-    {"full_name": "Contractor", "email": "contractor@demo.local", "role": "Contract worker"},
-    {"full_name": "Long-Tenure Employee", "email": "longtenure@demo.local", "role": "8+ year employee"},
+    {"full_name": "Daniel Potts", "email": "daniel.potts@demo.local", "role": "Operations Manager"},
+    {"full_name": "Erica White", "email": "erica.white@demo.local", "role": "Senior Financial Analyst"},
+    {"full_name": "Hannah Lopez", "email": "hannah.lopez@demo.local", "role": "HR Manager"},
 ]
 
 MANAGERS = [
-    {"full_name": "Priya Shah", "email": "priya.shah@demo.local"},
-    {"full_name": "Manager Two", "email": "manager2@demo.local"},
+    {"full_name": "Vanshika Puri", "email": "vanshika.puri@demo.local"},
 ]
 
 PAGE_TITLE = "Agentic HR Assistant"

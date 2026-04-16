@@ -6,7 +6,6 @@ from api_client import send_message
 from components.persona_selector import persona_selector
 from components.message_bubble import message_bubble, status_badge
 
-st.set_page_config(page_title=f"{PAGE_TITLE} — Chat", layout="wide")
 st.title("HR Assistant")
 
 # --- Sidebar: persona selector ---

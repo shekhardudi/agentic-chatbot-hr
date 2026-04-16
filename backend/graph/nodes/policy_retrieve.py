@@ -1,7 +1,13 @@
 """
 policy_retrieve node — hybrid retrieval using vector search + FTS,
 fused with reciprocal rank fusion.
+
+Optimised: batch-embeds all query variants in one call, then runs
+all vector + FTS searches in parallel threads (I/O-bound, GIL-safe).
 """
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from logger import get_logger
 from models.state import AgentState
 from db.rag import vector_search, fulltext_search, reciprocal_rank_fusion
@@ -13,18 +19,35 @@ log = get_logger(__name__)
 def policy_retrieve_node(state: AgentState) -> AgentState:
     queries = state.get("rewritten_queries") or [state["message"]]
     log.info("Hybrid retrieval | %d query variant(s)", len(queries))
+    t0 = time.perf_counter()
 
+    # --- Batch-embed all queries in one model.encode() call ---
+    embeddings = embed_texts(queries)
+
+    # --- Fire all vector + FTS searches in parallel ---
     all_vector: list[dict] = []
     all_fts: list[dict] = []
 
-    for i, query in enumerate(queries):
-        log.debug("Embedding query %d/%d: %r", i + 1, len(queries), query[:60])
-        embeddings = embed_texts([query])
-        if embeddings:
-            vec_results = vector_search(embeddings[0], limit=10)
-            all_vector.extend(vec_results)
-        fts_results = fulltext_search(query, limit=10)
-        all_fts.extend(fts_results)
+    def _vec_search(emb: list[float]) -> list[dict]:
+        return vector_search(emb, limit=10)
+
+    def _fts_search(q: str) -> list[dict]:
+        return fulltext_search(q, limit=10)
+
+    with ThreadPoolExecutor(max_workers=len(queries) * 2) as pool:
+        vec_futures = {
+            pool.submit(_vec_search, emb): i
+            for i, emb in enumerate(embeddings)
+        }
+        fts_futures = {
+            pool.submit(_fts_search, q): i
+            for i, q in enumerate(queries)
+        }
+
+        for fut in as_completed(vec_futures):
+            all_vector.extend(fut.result())
+        for fut in as_completed(fts_futures):
+            all_fts.extend(fut.result())
 
     log.debug("Raw results before dedup | vector=%d | fts=%d", len(all_vector), len(all_fts))
 
@@ -45,9 +68,10 @@ def policy_retrieve_node(state: AgentState) -> AgentState:
         list(seen_fts.values()),
         top_n=8,
     )
+    elapsed = time.perf_counter() - t0
     log.info(
-        "Retrieval complete | unique_vector=%d | unique_fts=%d | fused=%d",
-        len(seen_vec), len(seen_fts), len(fused),
+        "Retrieval complete | unique_vector=%d | unique_fts=%d | fused=%d | elapsed=%.2fs",
+        len(seen_vec), len(seen_fts), len(fused), elapsed,
     )
     state["retrieved_chunks"] = fused
     return state

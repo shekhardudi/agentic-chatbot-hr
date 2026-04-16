@@ -8,8 +8,14 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 class Settings(BaseSettings):
+    # LLM provider: "anthropic" or "openai"
+    llm_provider: str = "anthropic"
+
     # Anthropic
     anthropic_api_key: str = ""
+
+    # OpenAI
+    openai_api_key: str = ""
 
     # PostgreSQL
     postgres_host: str = "localhost"

@@ -1,5 +1,5 @@
 """
-policy_rewrite node — expands the employee's question into 2–4 search variants.
+policy_rewrite node — expands the employee's question into 2–3 search variants.
 """
 import json
 import re
@@ -34,7 +34,7 @@ def policy_rewrite_node(state: AgentState) -> AgentState:
     if state["message"] not in queries:
         queries.insert(0, state["message"])
 
-    state["rewritten_queries"] = queries[:4]
+    state["rewritten_queries"] = queries[:3]
     log.info("Query rewrite produced %d variants", len(state["rewritten_queries"]))
     log.debug("Rewritten queries: %s", state["rewritten_queries"])
     return state

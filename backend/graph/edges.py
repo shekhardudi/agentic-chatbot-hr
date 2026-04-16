@@ -18,6 +18,16 @@ def route_intent(state: AgentState) -> str:
     return "unsupported"
 
 
+def route_post_resolve(state: AgentState) -> str:
+    """Route from resolve_user to the correct worker based on already-classified intent."""
+    intent = state.get("intent", "unsupported")
+    if intent == "leave_balance":
+        return "leave_balance"
+    if intent == "software_provision":
+        return "provision_map"
+    return "unsupported"
+
+
 def route_eligibility(state: AgentState) -> str:
     """Route from provision_eligibility: eligible → request, ineligible → compose."""
     if state.get("eligible"):

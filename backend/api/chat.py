@@ -34,6 +34,7 @@ async def chat(request: ChatRequest):
         "retrieved_chunks": None,
         "parent_sections": None,
         "evidence_sufficient": None,
+        "topic_verdicts": None,
         "matched_packages": None,
         "eligible": None,
         "eligibility_reason": None,

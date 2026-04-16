@@ -5,7 +5,6 @@ from api_client import get_pending_approvals
 from components.persona_selector import manager_selector
 from components.approval_card import approval_card
 
-st.set_page_config(page_title=f"{PAGE_TITLE} — Approvals", layout="wide")
 st.title("Manager Approval Queue")
 
 # --- Sidebar: manager persona ---

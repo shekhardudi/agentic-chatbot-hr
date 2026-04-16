@@ -7,7 +7,7 @@ from functools import lru_cache
 from langgraph.graph import StateGraph, END
 
 from models.state import AgentState
-from graph.edges import route_intent, route_eligibility
+from graph.edges import route_intent, route_post_resolve, route_eligibility
 
 from graph.nodes.resolve_user import resolve_user
 from graph.nodes.classify_intent import classify_intent
@@ -48,9 +48,8 @@ def _build_graph():
     g.add_node("compose_response", compose_response_node)
     g.add_node("audit", audit_node)
 
-    # Entry point
-    g.set_entry_point("resolve_user")
-    g.add_edge("resolve_user", "classify_intent")
+    # Entry point — classify first, resolve_user only for paths that need employee_id
+    g.set_entry_point("classify_intent")
 
     # Intent routing
     g.add_conditional_edges(
@@ -58,8 +57,19 @@ def _build_graph():
         route_intent,
         {
             "clarify": "clarify",
-            "leave_balance": "leave_balance",
+            "leave_balance": "resolve_user",
             "policy_rewrite": "policy_rewrite",
+            "provision_map": "resolve_user",
+            "unsupported": "compose_response",
+        },
+    )
+
+    # resolve_user → dispatch to the correct worker
+    g.add_conditional_edges(
+        "resolve_user",
+        route_post_resolve,
+        {
+            "leave_balance": "leave_balance",
             "provision_map": "provision_map",
             "unsupported": "compose_response",
         },

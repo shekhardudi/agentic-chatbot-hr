@@ -5,6 +5,7 @@ langchain-core
 psycopg2-binary
 pgvector
 anthropic
+openai
 sentence-transformers
 requests
 pydantic
