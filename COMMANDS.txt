@@ -1,0 +1,147 @@
+==============================================================
+  AGENTIC HR — RUN COMMANDS
+==============================================================
+
+PREREQUISITES
+-------------
+- Docker Desktop running
+- Python 3.11+
+- Copy .env.example to .env and fill in ANTHROPIC_API_KEY
+  (the Gitea/Mattermost/NocoDB tokens are filled in after
+   first-run setup of those services)
+
+--------------------------------------------------------------
+STEP 1 — Start all services (Postgres, NocoDB, Gitea, Mattermost)
+--------------------------------------------------------------
+
+  docker-compose up -d
+
+Check all containers are healthy:
+
+  docker-compose ps
+
+Services available after startup:
+  NocoDB      → http://localhost:8080   (create admin account on first visit)
+  Gitea       → http://localhost:3000   (run setup wizard on first visit)
+  Mattermost  → http://localhost:8065   (create admin account on first visit)
+  PostgreSQL  → localhost:5432
+
+--------------------------------------------------------------
+STEP 2 — After first-visit setup, generate API tokens
+--------------------------------------------------------------
+
+NocoDB:
+  → Settings → Team & Auth → API Tokens → Add Token
+  → Set NOCODB_API_TOKEN in .env
+
+Gitea:
+  → User Settings (top-right) → Applications → Generate Token
+  → Set GITEA_ADMIN_TOKEN in .env
+
+Mattermost:
+  → System Console → Integrations → Personal Access Tokens
+  → Set MATTERMOST_ADMIN_TOKEN in .env
+
+--------------------------------------------------------------
+STEP 3 — Generate synthetic data
+--------------------------------------------------------------
+
+  cd /path/to/agentic_hr
+  pip install faker requests
+  python synthetic_data/generate.py
+
+Output files: synthetic_data/output/*.json
+SQL fallback: synthetic_data/sql/seed.sql
+
+--------------------------------------------------------------
+STEP 4 — Seed PostgreSQL with synthetic data
+--------------------------------------------------------------
+
+  docker exec -i agentic_hr_postgres psql -U agentic_hr -d agentic_hr < synthetic_data/sql/seed.sql
+
+NocoDB is configured with PostgreSQL as its external data source,
+so seeded data is visible in NocoDB automatically — no separate
+NocoDB seeding step is needed.
+
+--------------------------------------------------------------
+STEP 5 — Ingest HR policy PDFs
+--------------------------------------------------------------
+
+  cd ingestion
+  pip install -r requirements.txt
+  cd ..
+
+  # Run from project root:
+  python -m ingestion.ingest
+
+PDFs are read from: hr_policy_pdfs/*.pdf
+Parsed markdown saved to: ingestion/output_markdown/
+
+--------------------------------------------------------------
+STEP 6 — Start the FastAPI backend
+--------------------------------------------------------------
+
+  cd backend
+  uvicorn main:app --reload --port 8000
+
+API docs:  http://localhost:8000/docs
+Health:    http://localhost:8000/health
+
+--------------------------------------------------------------
+STEP 7 — Start the Streamlit UI
+--------------------------------------------------------------
+
+  cd ui
+  pip install -r requirements.txt
+  streamlit run app.py --server.port 8501
+
+UI:        http://localhost:8501
+  → Chat page:      home page
+  → Approvals page: sidebar → Manager Approvals
+
+--------------------------------------------------------------
+DEMO FLOWS TO TEST
+--------------------------------------------------------------
+
+Flow 1 — Leave balance:
+  Persona: Shekhar Dudi
+  Message: "How much annual leave do I have?"
+
+Flow 2 — Policy Q&A:
+  Persona: Shekhar Dudi
+  Message: "Can I claim a taxi home after a late meeting?"
+
+Flow 3 — Software provisioning:
+  Persona: Shekhar Dudi
+  Message: "Set me up with Gitea and Mattermost for engineering"
+  → Then go to Manager Approvals page and approve the request
+
+--------------------------------------------------------------
+STOP ALL SERVICES
+--------------------------------------------------------------
+
+  docker-compose down
+
+To also delete all data volumes:
+  docker-compose down -v
+
+--------------------------------------------------------------
+ENVIRONMENT VARIABLES REFERENCE (.env)
+--------------------------------------------------------------
+
+ANTHROPIC_API_KEY=sk-ant-...       # Required
+NOCODB_API_TOKEN=...               # After NocoDB setup
+GITEA_ADMIN_TOKEN=...              # After Gitea setup
+MATTERMOST_ADMIN_TOKEN=...         # After Mattermost setup
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=agentic_hr
+POSTGRES_PASSWORD=agentic_hr_dev
+POSTGRES_DB=agentic_hr
+NOCODB_URL=http://localhost:8080
+GITEA_URL=http://localhost:3000
+MATTERMOST_URL=http://localhost:8065
+LLM_FAST_MODEL=claude-haiku-4-5-20251001
+LLM_STRONG_MODEL=claude-sonnet-4-6
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+EMBEDDING_DIMENSION=384

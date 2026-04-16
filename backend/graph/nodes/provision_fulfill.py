@@ -1,0 +1,93 @@
+"""
+provision_fulfill node — calls Gitea and/or Mattermost MCP clients
+to actually provision access after manager approval.
+"""
+import json
+
+from logger import get_logger
+from models.state import AgentState
+from mcp.nocodb_client import NocoDBMCPClient
+from mcp.gitea_client import GiteaMCPClient
+from mcp.mattermost_client import MattermostMCPClient
+from config import settings
+
+nocodb = NocoDBMCPClient(settings.nocodb_url, settings.nocodb_api_token, settings.nocodb_base_id)
+gitea = GiteaMCPClient(settings.gitea_url, settings.gitea_admin_token)
+mattermost = MattermostMCPClient(settings.mattermost_url, settings.mattermost_admin_token)
+log = get_logger(__name__)
+
+
+def _fulfill_package(package: dict, employee_profile: dict) -> dict:
+    pkg_id = package.get("package_id", "")
+    payload = package.get("payload", {})
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except Exception:
+            payload = {}
+
+    result = {"package_id": pkg_id}
+
+    if "GH" in pkg_id:
+        org = payload.get("org", "agentic-hr")
+        team = payload.get("team", "engineering")
+        username = employee_profile.get("github_username", "")
+        log.info("Fulfilling Gitea access | org=%s | team=%s | username=%s", org, team, username)
+        result["gitea"] = gitea.provision(org, team, username)
+
+    if "SL" in pkg_id:
+        team = payload.get("team", "engineering")
+        channels = payload.get("channels", ["general"])
+        email = employee_profile.get("email", "")
+        log.info("Fulfilling Mattermost access | team=%s | channels=%s | user=%s", team, channels, email)
+        result["mattermost"] = mattermost.provision(team, channels, email)
+
+    return result
+
+
+def provision_fulfill_node(state: AgentState) -> AgentState:
+    request_id = state.get("request_id")
+    email = state["employee_email"]
+    log.info("Fulfilling provisioning | request_id=%s | email=%s", request_id, email)
+
+    try:
+        profile = nocodb.get_employee_profile(email) or {}
+        req = nocodb.get_access_request(request_id) if request_id else None
+        if not req:
+            log.error("Fulfillment: access request not found | id=%s", request_id)
+            state["fulfillment_result"] = {"error": "Request not found"}
+            return state
+
+        pkg = nocodb.get_access_package(req["package_id"]) or {}
+        result = _fulfill_package(pkg, profile)
+
+        nocodb.update_request_fulfillment(request_id, result)
+        state["fulfillment_result"] = result
+        state["approval_status"] = "fulfilled"
+        log.info("Fulfillment complete | request_id=%s | result=%s", request_id, result)
+    except Exception as e:
+        log.error("Fulfillment failed | request_id=%s | error=%s", request_id, e, exc_info=True)
+        state["fulfillment_result"] = {"error": str(e)}
+
+    return state
+
+
+async def run_fulfillment(request_id: str) -> dict:
+    """Called by the approvals API endpoint after manager approval."""
+    log.info("run_fulfillment triggered | request_id=%s", request_id)
+    try:
+        req = nocodb.get_access_request(request_id)
+        if not req:
+            log.warning("run_fulfillment: request not found | id=%s", request_id)
+            return {"error": "Request not found"}
+
+        email = req.get("requester_email", "")
+        profile = nocodb.get_employee_profile(email) or {}
+        pkg = nocodb.get_access_package(req["package_id"]) or {}
+        result = _fulfill_package(pkg, profile)
+        nocodb.update_request_fulfillment(request_id, result)
+        log.info("run_fulfillment complete | request_id=%s", request_id)
+        return result
+    except Exception as e:
+        log.error("run_fulfillment error | request_id=%s | error=%s", request_id, e, exc_info=True)
+        return {"error": str(e)}

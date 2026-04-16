@@ -1,0 +1,24 @@
+[
+  {
+    "request_id": "AR-0001",
+    "requester_id": "EMP-001",
+    "requester_email": "shekhar.dudi@demo.local",
+    "package_id": "PKG-GH-ENG-STD",
+    "approver_id": "EMP-100",
+    "status": "fulfilled",
+    "created_ts": "2026-01-10T09:00:00Z",
+    "decided_ts": "2026-01-10T10:00:00Z",
+    "fulfillment_result": "{\"gitea\": {\"team_added\": true}}"
+  },
+  {
+    "request_id": "AR-0002",
+    "requester_id": "EMP-006",
+    "requester_email": "erica.white@demo.local",
+    "package_id": "PKG-GH-ENG-STD",
+    "approver_id": "EMP-102",
+    "status": "denied",
+    "created_ts": "2026-02-01T14:00:00Z",
+    "decided_ts": "2026-02-01T15:00:00Z",
+    "fulfillment_result": null
+  }
+]

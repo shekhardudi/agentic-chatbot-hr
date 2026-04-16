@@ -1,0 +1,94 @@
+version: "3.9"
+
+networks:
+  agentic_hr_network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  gitea_data:
+  mattermost_data:
+  mattermost_config:
+
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: agentic_hr_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: agentic_hr
+      POSTGRES_PASSWORD: agentic_hr_dev
+      POSTGRES_DB: agentic_hr
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentic_hr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentic_hr_network
+
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: agentic_hr_nocodb
+    ports:
+      - "8080:8080"
+    environment:
+      NC_DB: "pg://agentic_hr_postgres:5432?u=agentic_hr&p=agentic_hr_dev&d=nocodb"
+      NC_AUTH_JWT_SECRET: "agentic-hr-nocodb-jwt-secret"
+      NC_ALLOW_LOCAL_HOOKS: "true"
+      NC_ALLOW_LOCAL_EXTERNAL_DBS: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agentic_hr_network
+
+  gitea:
+    image: gitea/gitea:latest
+    container_name: agentic_hr_gitea
+    ports:
+      - "3000:3000"
+      - "2222:22"
+    environment:
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: agentic_hr_postgres:5432
+      GITEA__database__NAME: gitea
+      GITEA__database__USER: agentic_hr
+      GITEA__database__PASSWD: agentic_hr_dev
+      GITEA__server__ROOT_URL: "http://localhost:3000/"
+      GITEA__server__SSH_DOMAIN: localhost
+      GITEA__server__SSH_PORT: "2222"
+    volumes:
+      - gitea_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agentic_hr_network
+
+  mattermost:
+    image: mattermost/mattermost-team-edition:latest
+    container_name: agentic_hr_mattermost
+    ports:
+      - "8065:8065"
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: "postgres://agentic_hr:agentic_hr_dev@agentic_hr_postgres:5432/mattermost?sslmode=disable&connect_timeout=10"
+      MM_SERVICESETTINGS_SITEURL: "http://localhost:8065"
+      MM_SERVICESETTINGS_ENABLEBOTACCOUNTCREATION: "true"
+      MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS: "true"
+      MM_SERVICESETTINGS_ENABLEOUTGOINGWEBHOOKS: "true"
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: "true"
+    volumes:
+      - mattermost_data:/mattermost/data
+      - mattermost_config:/mattermost/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agentic_hr_network
