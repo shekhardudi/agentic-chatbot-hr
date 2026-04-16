@@ -1,0 +1,18 @@
+[
+  {
+    "package_id": "PKG-GH-ENG-STD",
+    "package_name": "github_engineering_standard",
+    "target_system": "gitea",
+    "risk_level": "low",
+    "approval_rule": "manager_auto_approve",
+    "payload": "{\"org\": \"agentic-hr\", \"team\": \"engineering\", \"role\": \"member\", \"permission\": \"write\"}"
+  },
+  {
+    "package_id": "PKG-SL-ENG-STD",
+    "package_name": "slack_engineering_standard",
+    "target_system": "mattermost",
+    "risk_level": "low",
+    "approval_rule": "manager_auto_approve",
+    "payload": "{\"team\": \"engineering\", \"channels\": [\"general\", \"engineering\", \"standups\"], \"role\": \"member\"}"
+  }
+]

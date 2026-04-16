@@ -1,0 +1,610 @@
+[
+  {
+    "employee_id": "EMP-100",
+    "leave_type": "annual",
+    "balance_hours": 151.5,
+    "accrued_ytd_hours": 160,
+    "used_ytd_hours": 8.5,
+    "as_of_ts": "2026-04-15T15:12:04.392609+00:00"
+  },
+  {
+    "employee_id": "EMP-100",
+    "leave_type": "sick",
+    "balance_hours": 1313.2,
+    "accrued_ytd_hours": 1333.2,
+    "used_ytd_hours": 20.0,
+    "as_of_ts": "2026-04-15T15:12:04.392647+00:00"
+  },
+  {
+    "employee_id": "EMP-100",
+    "leave_type": "personal",
+    "balance_hours": 13.4,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 10.6,
+    "as_of_ts": "2026-04-15T15:12:04.392655+00:00"
+  },
+  {
+    "employee_id": "EMP-100",
+    "leave_type": "long_service",
+    "balance_hours": 480.0,
+    "accrued_ytd_hours": 480.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.392662+00:00"
+  },
+  {
+    "employee_id": "EMP-101",
+    "leave_type": "annual",
+    "balance_hours": 134.3,
+    "accrued_ytd_hours": 160,
+    "used_ytd_hours": 25.7,
+    "as_of_ts": "2026-04-15T15:12:04.392685+00:00"
+  },
+  {
+    "employee_id": "EMP-101",
+    "leave_type": "sick",
+    "balance_hours": 1078.2,
+    "accrued_ytd_hours": 1083.9,
+    "used_ytd_hours": 5.7,
+    "as_of_ts": "2026-04-15T15:12:04.392697+00:00"
+  },
+  {
+    "employee_id": "EMP-101",
+    "leave_type": "personal",
+    "balance_hours": 22.3,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 1.7,
+    "as_of_ts": "2026-04-15T15:12:04.392704+00:00"
+  },
+  {
+    "employee_id": "EMP-101",
+    "leave_type": "long_service",
+    "balance_hours": 480.0,
+    "accrued_ytd_hours": 480.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.392711+00:00"
+  },
+  {
+    "employee_id": "EMP-102",
+    "leave_type": "annual",
+    "balance_hours": 130.2,
+    "accrued_ytd_hours": 160,
+    "used_ytd_hours": 29.8,
+    "as_of_ts": "2026-04-15T15:12:04.392724+00:00"
+  },
+  {
+    "employee_id": "EMP-102",
+    "leave_type": "sick",
+    "balance_hours": 1343.9,
+    "accrued_ytd_hours": 1365.5,
+    "used_ytd_hours": 21.6,
+    "as_of_ts": "2026-04-15T15:12:04.392734+00:00"
+  },
+  {
+    "employee_id": "EMP-102",
+    "leave_type": "personal",
+    "balance_hours": 15.0,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 9.0,
+    "as_of_ts": "2026-04-15T15:12:04.392741+00:00"
+  },
+  {
+    "employee_id": "EMP-102",
+    "leave_type": "long_service",
+    "balance_hours": 480.0,
+    "accrued_ytd_hours": 480.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.392746+00:00"
+  },
+  {
+    "employee_id": "EMP-103",
+    "leave_type": "annual",
+    "balance_hours": 142.9,
+    "accrued_ytd_hours": 160,
+    "used_ytd_hours": 17.1,
+    "as_of_ts": "2026-04-15T15:12:04.392757+00:00"
+  },
+  {
+    "employee_id": "EMP-103",
+    "leave_type": "sick",
+    "balance_hours": 1320.5,
+    "accrued_ytd_hours": 1343.8,
+    "used_ytd_hours": 23.3,
+    "as_of_ts": "2026-04-15T15:12:04.393305+00:00"
+  },
+  {
+    "employee_id": "EMP-103",
+    "leave_type": "personal",
+    "balance_hours": 19.7,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 4.3,
+    "as_of_ts": "2026-04-15T15:12:04.393331+00:00"
+  },
+  {
+    "employee_id": "EMP-103",
+    "leave_type": "long_service",
+    "balance_hours": 480.0,
+    "accrued_ytd_hours": 480.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.393337+00:00"
+  },
+  {
+    "employee_id": "EMP-104",
+    "leave_type": "annual",
+    "balance_hours": 120.1,
+    "accrued_ytd_hours": 160,
+    "used_ytd_hours": 39.9,
+    "as_of_ts": "2026-04-15T15:12:04.393357+00:00"
+  },
+  {
+    "employee_id": "EMP-104",
+    "leave_type": "sick",
+    "balance_hours": 1255.0,
+    "accrued_ytd_hours": 1260.5,
+    "used_ytd_hours": 5.5,
+    "as_of_ts": "2026-04-15T15:12:04.393366+00:00"
+  },
+  {
+    "employee_id": "EMP-104",
+    "leave_type": "personal",
+    "balance_hours": 18.1,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 5.9,
+    "as_of_ts": "2026-04-15T15:12:04.393379+00:00"
+  },
+  {
+    "employee_id": "EMP-104",
+    "leave_type": "long_service",
+    "balance_hours": 480.0,
+    "accrued_ytd_hours": 480.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.393383+00:00"
+  },
+  {
+    "employee_id": "EMP-001",
+    "leave_type": "annual",
+    "balance_hours": 26.5,
+    "accrued_ytd_hours": 56.7,
+    "used_ytd_hours": 30.2,
+    "as_of_ts": "2026-04-15T15:12:04.393390+00:00"
+  },
+  {
+    "employee_id": "EMP-001",
+    "leave_type": "sick",
+    "balance_hours": 306.4,
+    "accrued_ytd_hours": 340.8,
+    "used_ytd_hours": 34.4,
+    "as_of_ts": "2026-04-15T15:12:04.393395+00:00"
+  },
+  {
+    "employee_id": "EMP-001",
+    "leave_type": "personal",
+    "balance_hours": 22.2,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 1.8,
+    "as_of_ts": "2026-04-15T15:12:04.393400+00:00"
+  },
+  {
+    "employee_id": "EMP-002",
+    "leave_type": "annual",
+    "balance_hours": 4.0,
+    "accrued_ytd_hours": 4.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.393408+00:00"
+  },
+  {
+    "employee_id": "EMP-002",
+    "leave_type": "sick",
+    "balance_hours": 0.0,
+    "accrued_ytd_hours": 0.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.393413+00:00"
+  },
+  {
+    "employee_id": "EMP-002",
+    "leave_type": "personal",
+    "balance_hours": 16.8,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 7.2,
+    "as_of_ts": "2026-04-15T15:12:04.393417+00:00"
+  },
+  {
+    "employee_id": "EMP-003",
+    "leave_type": "annual",
+    "balance_hours": 144.6,
+    "accrued_ytd_hours": 160,
+    "used_ytd_hours": 15.4,
+    "as_of_ts": "2026-04-15T15:12:04.393424+00:00"
+  },
+  {
+    "employee_id": "EMP-003",
+    "leave_type": "sick",
+    "balance_hours": 970.9,
+    "accrued_ytd_hours": 994.7,
+    "used_ytd_hours": 23.8,
+    "as_of_ts": "2026-04-15T15:12:04.393429+00:00"
+  },
+  {
+    "employee_id": "EMP-003",
+    "leave_type": "personal",
+    "balance_hours": 18.4,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 5.6,
+    "as_of_ts": "2026-04-15T15:12:04.393432+00:00"
+  },
+  {
+    "employee_id": "EMP-003",
+    "leave_type": "long_service",
+    "balance_hours": 480.0,
+    "accrued_ytd_hours": 480.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.393436+00:00"
+  },
+  {
+    "employee_id": "EMP-004",
+    "leave_type": "annual",
+    "balance_hours": 65.5,
+    "accrued_ytd_hours": 75.6,
+    "used_ytd_hours": 10.1,
+    "as_of_ts": "2026-04-15T15:12:04.393442+00:00"
+  },
+  {
+    "employee_id": "EMP-004",
+    "leave_type": "sick",
+    "balance_hours": 432.2,
+    "accrued_ytd_hours": 454.3,
+    "used_ytd_hours": 22.1,
+    "as_of_ts": "2026-04-15T15:12:04.393446+00:00"
+  },
+  {
+    "employee_id": "EMP-004",
+    "leave_type": "personal",
+    "balance_hours": 12.7,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 11.3,
+    "as_of_ts": "2026-04-15T15:12:04.393460+00:00"
+  },
+  {
+    "employee_id": "EMP-006",
+    "leave_type": "annual",
+    "balance_hours": 49.1,
+    "accrued_ytd_hours": 76.3,
+    "used_ytd_hours": 27.2,
+    "as_of_ts": "2026-04-15T15:12:04.393467+00:00"
+  },
+  {
+    "employee_id": "EMP-006",
+    "leave_type": "sick",
+    "balance_hours": 453.6,
+    "accrued_ytd_hours": 458.2,
+    "used_ytd_hours": 4.6,
+    "as_of_ts": "2026-04-15T15:12:04.393472+00:00"
+  },
+  {
+    "employee_id": "EMP-006",
+    "leave_type": "personal",
+    "balance_hours": 13.4,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 10.6,
+    "as_of_ts": "2026-04-15T15:12:04.393476+00:00"
+  },
+  {
+    "employee_id": "EMP-007",
+    "leave_type": "annual",
+    "balance_hours": 121.2,
+    "accrued_ytd_hours": 151.2,
+    "used_ytd_hours": 30.0,
+    "as_of_ts": "2026-04-15T15:12:04.393483+00:00"
+  },
+  {
+    "employee_id": "EMP-007",
+    "leave_type": "sick",
+    "balance_hours": 877.9,
+    "accrued_ytd_hours": 908.6,
+    "used_ytd_hours": 30.7,
+    "as_of_ts": "2026-04-15T15:12:04.393495+00:00"
+  },
+  {
+    "employee_id": "EMP-007",
+    "leave_type": "personal",
+    "balance_hours": 19.9,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 4.1,
+    "as_of_ts": "2026-04-15T15:12:04.393499+00:00"
+  },
+  {
+    "employee_id": "EMP-007",
+    "leave_type": "long_service",
+    "balance_hours": 480.0,
+    "accrued_ytd_hours": 480.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.393503+00:00"
+  },
+  {
+    "employee_id": "EMP-008",
+    "leave_type": "annual",
+    "balance_hours": 59.9,
+    "accrued_ytd_hours": 71.6,
+    "used_ytd_hours": 11.7,
+    "as_of_ts": "2026-04-15T15:12:04.393510+00:00"
+  },
+  {
+    "employee_id": "EMP-008",
+    "leave_type": "sick",
+    "balance_hours": 424.0,
+    "accrued_ytd_hours": 430.3,
+    "used_ytd_hours": 6.3,
+    "as_of_ts": "2026-04-15T15:12:04.393516+00:00"
+  },
+  {
+    "employee_id": "EMP-008",
+    "leave_type": "personal",
+    "balance_hours": 24.0,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 0.0,
+    "as_of_ts": "2026-04-15T15:12:04.393520+00:00"
+  },
+  {
+    "employee_id": "EMP-009",
+    "leave_type": "annual",
+    "balance_hours": 34.9,
+    "accrued_ytd_hours": 63.8,
+    "used_ytd_hours": 28.9,
+    "as_of_ts": "2026-04-15T15:12:04.393527+00:00"
+  },
+  {
+    "employee_id": "EMP-009",
+    "leave_type": "sick",
+    "balance_hours": 354.4,
+    "accrued_ytd_hours": 383.2,
+    "used_ytd_hours": 28.8,
+    "as_of_ts": "2026-04-15T15:12:04.393533+00:00"
+  },
+  {
+    "employee_id": "EMP-009",
+    "leave_type": "personal",
+    "balance_hours": 12.3,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 11.7,
+    "as_of_ts": "2026-04-15T15:12:04.393537+00:00"
+  },
+  {
+    "employee_id": "EMP-010",
+    "leave_type": "annual",
+    "balance_hours": 7.3,
+    "accrued_ytd_hours": 30.9,
+    "used_ytd_hours": 23.6,
+    "as_of_ts": "2026-04-15T15:12:04.393545+00:00"
+  },
+  {
+    "employee_id": "EMP-010",
+    "leave_type": "sick",
+    "balance_hours": 165.6,
+    "accrued_ytd_hours": 185.9,
+    "used_ytd_hours": 20.3,
+    "as_of_ts": "2026-04-15T15:12:04.393550+00:00"
+  },
+  {
+    "employee_id": "EMP-010",
+    "leave_type": "personal",
+    "balance_hours": 22.7,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 1.3,
+    "as_of_ts": "2026-04-15T15:12:04.393555+00:00"
+  },
+  {
+    "employee_id": "EMP-011",
+    "leave_type": "annual",
+    "balance_hours": 7.5,
+    "accrued_ytd_hours": 20.1,
+    "used_ytd_hours": 12.6,
+    "as_of_ts": "2026-04-15T15:12:04.393561+00:00"
+  },
+  {
+    "employee_id": "EMP-011",
+    "leave_type": "sick",
+    "balance_hours": 87.0,
+    "accrued_ytd_hours": 120.7,
+    "used_ytd_hours": 33.7,
+    "as_of_ts": "2026-04-15T15:12:04.393566+00:00"
+  },
+  {
+    "employee_id": "EMP-011",
+    "leave_type": "personal",
+    "balance_hours": 17.9,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 6.1,
+    "as_of_ts": "2026-04-15T15:12:04.393571+00:00"
+  },
+  {
+    "employee_id": "EMP-012",
+    "leave_type": "annual",
+    "balance_hours": 97.9,
+    "accrued_ytd_hours": 105.9,
+    "used_ytd_hours": 8.0,
+    "as_of_ts": "2026-04-15T15:12:04.393579+00:00"
+  },
+  {
+    "employee_id": "EMP-012",
+    "leave_type": "sick",
+    "balance_hours": 303.1,
+    "accrued_ytd_hours": 318.1,
+    "used_ytd_hours": 15.0,
+    "as_of_ts": "2026-04-15T15:12:04.393584+00:00"
+  },
+  {
+    "employee_id": "EMP-012",
+    "leave_type": "personal",
+    "balance_hours": 10.1,
+    "accrued_ytd_hours": 12.0,
+    "used_ytd_hours": 1.9,
+    "as_of_ts": "2026-04-15T15:12:04.393588+00:00"
+  },
+  {
+    "employee_id": "EMP-013",
+    "leave_type": "annual",
+    "balance_hours": 1.1,
+    "accrued_ytd_hours": 22.9,
+    "used_ytd_hours": 21.8,
+    "as_of_ts": "2026-04-15T15:12:04.393598+00:00"
+  },
+  {
+    "employee_id": "EMP-013",
+    "leave_type": "sick",
+    "balance_hours": 100.6,
+    "accrued_ytd_hours": 137.5,
+    "used_ytd_hours": 36.9,
+    "as_of_ts": "2026-04-15T15:12:04.393603+00:00"
+  },
+  {
+    "employee_id": "EMP-013",
+    "leave_type": "personal",
+    "balance_hours": 13.0,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 11.0,
+    "as_of_ts": "2026-04-15T15:12:04.393607+00:00"
+  },
+  {
+    "employee_id": "EMP-014",
+    "leave_type": "annual",
+    "balance_hours": 21.7,
+    "accrued_ytd_hours": 45.7,
+    "used_ytd_hours": 24.0,
+    "as_of_ts": "2026-04-15T15:12:04.393614+00:00"
+  },
+  {
+    "employee_id": "EMP-014",
+    "leave_type": "sick",
+    "balance_hours": 255.2,
+    "accrued_ytd_hours": 274.7,
+    "used_ytd_hours": 19.5,
+    "as_of_ts": "2026-04-15T15:12:04.393619+00:00"
+  },
+  {
+    "employee_id": "EMP-014",
+    "leave_type": "personal",
+    "balance_hours": 22.7,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 1.3,
+    "as_of_ts": "2026-04-15T15:12:04.393624+00:00"
+  },
+  {
+    "employee_id": "EMP-016",
+    "leave_type": "annual",
+    "balance_hours": 78.3,
+    "accrued_ytd_hours": 92.8,
+    "used_ytd_hours": 14.5,
+    "as_of_ts": "2026-04-15T15:12:04.393636+00:00"
+  },
+  {
+    "employee_id": "EMP-016",
+    "leave_type": "sick",
+    "balance_hours": 518.2,
+    "accrued_ytd_hours": 557.6,
+    "used_ytd_hours": 39.4,
+    "as_of_ts": "2026-04-15T15:12:04.393644+00:00"
+  },
+  {
+    "employee_id": "EMP-016",
+    "leave_type": "personal",
+    "balance_hours": 14.3,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 9.7,
+    "as_of_ts": "2026-04-15T15:12:04.393648+00:00"
+  },
+  {
+    "employee_id": "EMP-017",
+    "leave_type": "annual",
+    "balance_hours": 14.2,
+    "accrued_ytd_hours": 18.7,
+    "used_ytd_hours": 4.5,
+    "as_of_ts": "2026-04-15T15:12:04.393656+00:00"
+  },
+  {
+    "employee_id": "EMP-017",
+    "leave_type": "sick",
+    "balance_hours": 102.9,
+    "accrued_ytd_hours": 112.5,
+    "used_ytd_hours": 9.6,
+    "as_of_ts": "2026-04-15T15:12:04.393661+00:00"
+  },
+  {
+    "employee_id": "EMP-017",
+    "leave_type": "personal",
+    "balance_hours": 17.2,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 6.8,
+    "as_of_ts": "2026-04-15T15:12:04.393665+00:00"
+  },
+  {
+    "employee_id": "EMP-018",
+    "leave_type": "annual",
+    "balance_hours": 87.1,
+    "accrued_ytd_hours": 90.3,
+    "used_ytd_hours": 3.2,
+    "as_of_ts": "2026-04-15T15:12:04.393688+00:00"
+  },
+  {
+    "employee_id": "EMP-018",
+    "leave_type": "sick",
+    "balance_hours": 513.1,
+    "accrued_ytd_hours": 542.4,
+    "used_ytd_hours": 29.3,
+    "as_of_ts": "2026-04-15T15:12:04.393696+00:00"
+  },
+  {
+    "employee_id": "EMP-018",
+    "leave_type": "personal",
+    "balance_hours": 14.2,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 9.8,
+    "as_of_ts": "2026-04-15T15:12:04.393700+00:00"
+  },
+  {
+    "employee_id": "EMP-019",
+    "leave_type": "annual",
+    "balance_hours": 0.8,
+    "accrued_ytd_hours": 33.1,
+    "used_ytd_hours": 32.3,
+    "as_of_ts": "2026-04-15T15:12:04.393708+00:00"
+  },
+  {
+    "employee_id": "EMP-019",
+    "leave_type": "sick",
+    "balance_hours": 78.0,
+    "accrued_ytd_hours": 99.3,
+    "used_ytd_hours": 21.3,
+    "as_of_ts": "2026-04-15T15:12:04.393715+00:00"
+  },
+  {
+    "employee_id": "EMP-019",
+    "leave_type": "personal",
+    "balance_hours": 10.5,
+    "accrued_ytd_hours": 12.0,
+    "used_ytd_hours": 1.5,
+    "as_of_ts": "2026-04-15T15:12:04.393720+00:00"
+  },
+  {
+    "employee_id": "EMP-020",
+    "leave_type": "annual",
+    "balance_hours": 84.3,
+    "accrued_ytd_hours": 110.7,
+    "used_ytd_hours": 26.4,
+    "as_of_ts": "2026-04-15T15:12:04.393728+00:00"
+  },
+  {
+    "employee_id": "EMP-020",
+    "leave_type": "sick",
+    "balance_hours": 626.9,
+    "accrued_ytd_hours": 664.8,
+    "used_ytd_hours": 37.9,
+    "as_of_ts": "2026-04-15T15:12:04.393929+00:00"
+  },
+  {
+    "employee_id": "EMP-020",
+    "leave_type": "personal",
+    "balance_hours": 22.0,
+    "accrued_ytd_hours": 24.0,
+    "used_ytd_hours": 2.0,
+    "as_of_ts": "2026-04-15T15:12:04.393948+00:00"
+  }
+]
