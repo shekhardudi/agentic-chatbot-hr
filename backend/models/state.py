@@ -5,6 +5,7 @@ class AgentState(TypedDict):
     # Identity
     employee_email: str
     employee_id: Optional[str]
+    employee_profile: Optional[dict]
     session_id: Optional[str]
     message: str
 

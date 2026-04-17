@@ -18,11 +18,14 @@ def resolve_user(state: AgentState) -> AgentState:
         profile = nocodb.get_employee_profile(email)
         if profile:
             state["employee_id"] = profile.get("employee_id")
+            state["employee_profile"] = profile
             log.info("Employee resolved | email=%s | id=%s", email, state["employee_id"])
         else:
             state["employee_id"] = None
+            state["employee_profile"] = None
             log.warning("Employee profile not found | email=%s", email)
     except Exception as e:
         log.error("resolve_user failed | email=%s | error=%s", email, e)
         state["employee_id"] = None
+        state["employee_profile"] = None
     return state

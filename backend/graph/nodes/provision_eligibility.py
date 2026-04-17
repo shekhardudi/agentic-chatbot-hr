@@ -15,13 +15,17 @@ def provision_eligibility_node(state: AgentState) -> AgentState:
     packages = state.get("matched_packages") or []
     log.info("Eligibility check | email=%s | packages=%s", email, packages)
 
-    try:
-        profile = nocodb.get_employee_profile(email)
-    except Exception as e:
-        log.error("Eligibility check: failed to fetch profile | email=%s | error=%s", email, e)
-        state["eligible"] = False
-        state["eligibility_reason"] = f"Could not retrieve employee profile: {e}"
-        return state
+    profile = state.get("employee_profile")
+    if not profile:
+        log.debug("Profile not in state — fetching from NocoDB | email=%s", email)
+        try:
+            profile = nocodb.get_employee_profile(email)
+            state["employee_profile"] = profile
+        except Exception as e:
+            log.error("Eligibility check: failed to fetch profile | email=%s | error=%s", email, e)
+            state["eligible"] = False
+            state["eligibility_reason"] = f"Could not retrieve employee profile: {e}"
+            return state
 
     if not profile:
         log.warning("Eligibility check: employee not found | email=%s", email)
@@ -66,7 +70,7 @@ def provision_eligibility_node(state: AgentState) -> AgentState:
                 f"Your department is '{department}'."
             )
             return state
-
+    
     log.info("Eligibility check passed | email=%s", email)
     state["eligible"] = True
     state["eligibility_reason"] = "Eligible"

@@ -26,7 +26,7 @@ def provision_verify_node(state: AgentState) -> AgentState:
         org = gitea_data.get("org", "agentic-hr")
         team = gitea_data.get("team", "engineering")
         username = gitea_data.get("username", "")
-        verified = gitea.verify_access(org, team, username)
+        verified = gitea.verify_acess(org, team, username)
         verifications["gitea"] = verified
         log.info("Gitea verification | username=%s | verified=%s", username, verified)
 

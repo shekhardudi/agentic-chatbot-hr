@@ -16,12 +16,15 @@ def provision_request_node(state: AgentState) -> AgentState:
     email = state["employee_email"]
     log.info("Creating access request(s) | email=%s | packages=%s", email, packages)
 
-    try:
-        profile = nocodb.get_employee_profile(email)
-        approver_id = (profile or {}).get("manager_id", "")
-    except Exception as e:
-        log.error("Could not fetch manager_id for %s: %s", email, e)
-        approver_id = ""
+    profile = state.get("employee_profile")
+    if not profile:
+        log.debug("Profile not in state — fetching from NocoDB | email=%s", email)
+        try:
+            profile = nocodb.get_employee_profile(email)
+        except Exception as e:
+            log.error("Could not fetch profile for %s: %s", email, e)
+            profile = {}
+    approver_id = profile.get("manager_id", "")
 
     request_ids = []
     for pkg_id in packages:

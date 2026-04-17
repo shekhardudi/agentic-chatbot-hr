@@ -3,6 +3,8 @@ Mattermost MCP Client — wraps the Mattermost REST API (v4).
 Used to provision team/channel membership for new employees.
 """
 import requests
+import secrets
+import string
 
 from logger import get_logger
 
@@ -22,13 +24,16 @@ class MattermostMCPClient:
         url = f"{self.base_url}/api/v4{path}"
         _log.debug("Mattermost %s %s", method.upper(), path)
         resp = self.session.request(method, url, **kwargs)
-        resp.raise_for_status()
+        if not resp.ok:
+            body = resp.text[:500] if resp.text else "(empty)"
+            _log.error("Mattermost %s %s → %s | %s", method.upper(), path, resp.status_code, body)
+            resp.raise_for_status()
         if resp.content:
             return resp.json()
         return {}
 
     # ------------------------------------------------------------------
-    # User lookup
+    # User lookup / creation
     # ------------------------------------------------------------------
 
     def get_user_by_email(self, email: str) -> dict | None:
@@ -47,6 +52,16 @@ class MattermostMCPClient:
                 return None
             raise
 
+    def create_user(self, email: str, username: str) -> dict:
+        """Create a new Mattermost user with a random password (force reset on login)."""
+        password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+        _log.info("Creating Mattermost user | email=%s | username=%s", email, username)
+        return self._api("POST", "/users", json={
+            "email": email,
+            "username": username,
+            "password": password,
+        })
+
     # ------------------------------------------------------------------
     # Team operations
     # ------------------------------------------------------------------
@@ -58,6 +73,14 @@ class MattermostMCPClient:
             if e.response.status_code == 404:
                 return None
             raise
+
+    def create_team(self, team_name: str) -> dict:
+        _log.info("Creating Mattermost team | team=%s", team_name)
+        return self._api("POST", "/teams", json={
+            "name": team_name,
+            "display_name": team_name.replace("-", " ").replace("_", " ").title(),
+            "type": "O",
+        })
 
     def add_user_to_team(self, team_id: str, user_id: str) -> dict:
         return self._api("POST", f"/teams/{team_id}/members", json={
@@ -86,6 +109,15 @@ class MattermostMCPClient:
                 return None
             raise
 
+    def create_channel(self, team_id: str, channel_name: str) -> dict:
+        _log.info("Creating Mattermost channel | team_id=%s | channel=%s", team_id, channel_name)
+        return self._api("POST", "/channels", json={
+            "team_id": team_id,
+            "name": channel_name,
+            "display_name": channel_name.replace("-", " ").replace("_", " ").title(),
+            "type": "O",
+        })
+
     def add_user_to_channel(self, channel_id: str, user_id: str) -> dict:
         return self._api("POST", f"/channels/{channel_id}/members", json={
             "user_id": user_id,
@@ -99,14 +131,21 @@ class MattermostMCPClient:
         _log.info("Mattermost provision | team=%s | channels=%s | user=%s", team_name, channels, user_email)
         user = self.get_user_by_email(user_email)
         if user is None:
-            _log.warning("Mattermost user not found | email=%s", user_email)
-            return {"system": "mattermost", "error": f"User {user_email} not found in Mattermost"}
+            _log.info("Mattermost user not found — creating | email=%s", user_email)
+            username = user_email.split("@")[0].replace(".", "_")
+            try:
+                user = self.create_user(user_email, username)
+            except requests.HTTPError:
+                # Username may already exist — try lookup by username
+                user = self.get_user_by_username(username)
+                if user is None:
+                    raise  # genuinely can't create or find the user
 
         user_id = user["id"]
         team = self.get_team_by_name(team_name)
         if team is None:
-            _log.warning("Mattermost team not found | team=%s", team_name)
-            return {"system": "mattermost", "error": f"Team '{team_name}' not found in Mattermost"}
+            _log.info("Team not found — creating | team=%s", team_name)
+            team = self.create_team(team_name)
 
         team_id = team["id"]
         self.add_user_to_team(team_id, user_id)
@@ -114,12 +153,12 @@ class MattermostMCPClient:
         channel_results = []
         for ch_name in channels:
             ch = self.get_channel_by_name(team_id, ch_name)
-            if ch:
-                self.add_user_to_channel(ch["id"], user_id)
-                channel_results.append(ch_name)
-                _log.debug("Mattermost: added user to channel #%s", ch_name)
-            else:
-                _log.warning("Mattermost channel not found | team=%s | channel=%s", team_name, ch_name)
+            if ch is None:
+                _log.info("Channel not found — creating | team=%s | channel=%s", team_name, ch_name)
+                ch = self.create_channel(team_id, ch_name)
+            self.add_user_to_channel(ch["id"], user_id)
+            channel_results.append(ch_name)
+            _log.debug("Mattermost: added user to channel #%s", ch_name)
 
         team_added = self.is_user_in_team(team_id, user_id)
         _log.info(

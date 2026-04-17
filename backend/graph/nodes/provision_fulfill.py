@@ -32,8 +32,10 @@ def _fulfill_package(package: dict, employee_profile: dict) -> dict:
         org = payload.get("org", "agentic-hr")
         team = payload.get("team", "engineering")
         username = employee_profile.get("github_username", "")
+        email = employee_profile.get("email", "")
+        full_name = employee_profile.get("full_name", "")
         log.info("Fulfilling Gitea access | org=%s | team=%s | username=%s", org, team, username)
-        result["gitea"] = gitea.provision(org, team, username)
+        result["gitea"] = gitea.provision(org, team, username, email=email, full_name=full_name)
 
     if "SL" in pkg_id:
         team = payload.get("team", "engineering")
@@ -51,7 +53,11 @@ def provision_fulfill_node(state: AgentState) -> AgentState:
     log.info("Fulfilling provisioning | request_id=%s | email=%s", request_id, email)
 
     try:
-        profile = nocodb.get_employee_profile(email) or {}
+        profile = state.get("employee_profile")
+        if not profile:
+            log.debug("Profile not in state — fetching from NocoDB | email=%s", email)
+            profile = nocodb.get_employee_profile(email) or {}
+
         req = nocodb.get_access_request(request_id) if request_id else None
         if not req:
             log.error("Fulfillment: access request not found | id=%s", request_id)
@@ -81,8 +87,9 @@ async def run_fulfillment(request_id: str) -> dict:
             log.warning("run_fulfillment: request not found | id=%s", request_id)
             return {"error": "Request not found"}
 
-        email = req.get("requester_email", "")
-        profile = nocodb.get_employee_profile(email) or {}
+        requester_id = req.get("requester_id", "")
+        profile = nocodb.get_employee_by_id(requester_id) if requester_id else {}
+        profile = profile or {}
         pkg = nocodb.get_access_package(req["package_id"]) or {}
         result = _fulfill_package(pkg, profile)
         nocodb.update_request_fulfillment(request_id, result)

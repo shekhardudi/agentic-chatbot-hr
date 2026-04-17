@@ -23,6 +23,7 @@ async def chat(request: ChatRequest):
     initial_state = {
         "employee_email": request.employee_email,
         "employee_id": None,
+        "employee_profile": None,
         "session_id": session_id,
         "message": request.message,
         "intent": None,

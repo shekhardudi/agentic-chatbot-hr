@@ -96,6 +96,15 @@ class NocoDBMCPClient:
             self._log.warning("Employee not found | email=%s", email)
         return results[0] if results else None
 
+    def get_employee_by_id(self, employee_id: str) -> dict | None:
+        self._log.info("Fetching employee profile | employee_id=%s", employee_id)
+        results = self._list("employees", where=f"(employee_id,eq,{employee_id})")
+        if results:
+            self._log.info("Employee found | employee_id=%s | email=%s", employee_id, results[0].get("email"))
+        else:
+            self._log.warning("Employee not found | employee_id=%s", employee_id)
+        return results[0] if results else None
+
     # ------------------------------------------------------------------
     # Leave balance operations
     # ------------------------------------------------------------------

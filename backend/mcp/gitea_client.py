@@ -29,6 +29,25 @@ class GiteaMCPClient:
         return {}
 
     # ------------------------------------------------------------------
+    # User management
+    # ------------------------------------------------------------------
+
+    def create_user_if_missing(self, username: str, email: str, full_name: str = "") -> dict:
+        try:
+            return self._api("GET", f"/users/{username}")
+        except requests.HTTPError as e:
+            if e.response.status_code == 404:
+                _log.info("Creating Gitea user | username=%s", username)
+                return self._api("POST", "/admin/users", json={
+                    "username": username,
+                    "email": email,
+                    "full_name": full_name,
+                    "password": "Changeme1!",
+                    "must_change_password": True,
+                })
+            raise
+
+    # ------------------------------------------------------------------
     # Organization / team membership
     # ------------------------------------------------------------------
 
@@ -70,8 +89,13 @@ class GiteaMCPClient:
     # Provisioning entry point
     # ------------------------------------------------------------------
 
-    def provision(self, org: str, team: str, username: str) -> dict:
+    def provision(self, org: str, team: str, username: str, email: str = "", full_name: str = "") -> dict:
+        if not username:
+            _log.error("Gitea provision skipped — empty username")
+            return {"system": "gitea", "error": "No github_username on employee profile"}
         _log.info("Gitea provision | org=%s | team=%s | username=%s", org, team, username)
+        if email:
+            self.create_user_if_missing(username, email, full_name)
         self.create_org_if_missing(org)
         team_obj = self.get_or_create_team(org, team)
         self.add_user_to_team(team_obj["id"], username)
