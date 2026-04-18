@@ -3,10 +3,8 @@ provision_eligibility node — rules-based eligibility check (no LLM).
 """
 from logger import get_logger
 from models.state import AgentState
-from mcp.nocodb_client import NocoDBMCPClient
-from config import settings
+from db.hr import get_employee_profile
 
-nocodb = NocoDBMCPClient(settings.nocodb_url, settings.nocodb_api_token, settings.nocodb_base_id)
 log = get_logger(__name__)
 
 
@@ -17,9 +15,9 @@ def provision_eligibility_node(state: AgentState) -> AgentState:
 
     profile = state.get("employee_profile")
     if not profile:
-        log.debug("Profile not in state — fetching from NocoDB | email=%s", email)
+        log.debug("Profile not in state — fetching from DB | email=%s", email)
         try:
-            profile = nocodb.get_employee_profile(email)
+            profile = get_employee_profile(email)
             state["employee_profile"] = profile
         except Exception as e:
             log.error("Eligibility check: failed to fetch profile | email=%s | error=%s", email, e)

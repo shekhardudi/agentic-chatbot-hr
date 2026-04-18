@@ -30,6 +30,7 @@ class ApprovalRequest(BaseModel):
 class PendingApproval(BaseModel):
     request_id: str
     requester_email: str
+    requester_name: str = ""
     packages: list[str]
     status: str
     created_ts: str

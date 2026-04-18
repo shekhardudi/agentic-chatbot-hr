@@ -1,12 +1,8 @@
-"""
-provision_request node — creates access request records in NocoDB.
-"""
+"""provision_request node — creates access request records."""
 from logger import get_logger
 from models.state import AgentState
-from mcp.nocodb_client import NocoDBMCPClient
-from config import settings
+from db.hr import get_employee_profile, create_access_request
 
-nocodb = NocoDBMCPClient(settings.nocodb_url, settings.nocodb_api_token, settings.nocodb_base_id)
 log = get_logger(__name__)
 
 
@@ -18,9 +14,9 @@ def provision_request_node(state: AgentState) -> AgentState:
 
     profile = state.get("employee_profile")
     if not profile:
-        log.debug("Profile not in state — fetching from NocoDB | email=%s", email)
+        log.debug("Profile not in state — fetching from DB | email=%s", email)
         try:
-            profile = nocodb.get_employee_profile(email)
+            profile = get_employee_profile(email)
         except Exception as e:
             log.error("Could not fetch profile for %s: %s", email, e)
             profile = {}
@@ -29,7 +25,7 @@ def provision_request_node(state: AgentState) -> AgentState:
     request_ids = []
     for pkg_id in packages:
         try:
-            req = nocodb.create_access_request(
+            req = create_access_request(
                 requester_id=employee_id,
                 requester_email=email,
                 package_id=pkg_id,

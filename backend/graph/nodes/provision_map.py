@@ -3,10 +3,8 @@ provision_map node — maps natural language requests to known access packages.
 """
 from logger import get_logger
 from models.state import AgentState
-from mcp.nocodb_client import NocoDBMCPClient
-from config import settings
+from db.hr import list_access_packages
 
-nocodb = NocoDBMCPClient(settings.nocodb_url, settings.nocodb_api_token, settings.nocodb_base_id)
 log = get_logger(__name__)
 
 _KEYWORD_MAP = {
@@ -27,9 +25,9 @@ def provision_map_node(state: AgentState) -> AgentState:
             matched_packages.append(pkg_id)
 
     if not matched_packages:
-        log.debug("No keyword match — loading all packages from NocoDB")
+        log.debug("No keyword match — loading all packages from DB")
         try:
-            pkgs = nocodb.list_access_packages()
+            pkgs = list_access_packages()
             matched_packages = [p["package_id"] for p in pkgs]
         except Exception as e:
             log.error("Failed to load access packages: %s", e)

@@ -6,12 +6,17 @@ import json
 
 from logger import get_logger
 from models.state import AgentState
-from mcp.nocodb_client import NocoDBMCPClient
+from db.hr import (
+    get_employee_profile,
+    get_employee_by_id,
+    get_access_request,
+    get_access_package,
+    update_request_fulfillment,
+)
 from mcp.gitea_client import GiteaMCPClient
 from mcp.mattermost_client import MattermostMCPClient
 from config import settings
 
-nocodb = NocoDBMCPClient(settings.nocodb_url, settings.nocodb_api_token, settings.nocodb_base_id)
 gitea = GiteaMCPClient(settings.gitea_url, settings.gitea_admin_token)
 mattermost = MattermostMCPClient(settings.mattermost_url, settings.mattermost_admin_token)
 log = get_logger(__name__)
@@ -55,19 +60,19 @@ def provision_fulfill_node(state: AgentState) -> AgentState:
     try:
         profile = state.get("employee_profile")
         if not profile:
-            log.debug("Profile not in state — fetching from NocoDB | email=%s", email)
-            profile = nocodb.get_employee_profile(email) or {}
+            log.debug("Profile not in state — fetching from DB | email=%s", email)
+            profile = get_employee_profile(email) or {}
 
-        req = nocodb.get_access_request(request_id) if request_id else None
+        req = get_access_request(request_id) if request_id else None
         if not req:
             log.error("Fulfillment: access request not found | id=%s", request_id)
             state["fulfillment_result"] = {"error": "Request not found"}
             return state
 
-        pkg = nocodb.get_access_package(req["package_id"]) or {}
+        pkg = get_access_package(req["package_id"]) or {}
         result = _fulfill_package(pkg, profile)
 
-        nocodb.update_request_fulfillment(request_id, result)
+        update_request_fulfillment(request_id, result)
         state["fulfillment_result"] = result
         state["approval_status"] = "fulfilled"
         log.info("Fulfillment complete | request_id=%s | result=%s", request_id, result)
@@ -82,17 +87,17 @@ async def run_fulfillment(request_id: str) -> dict:
     """Called by the approvals API endpoint after manager approval."""
     log.info("run_fulfillment triggered | request_id=%s", request_id)
     try:
-        req = nocodb.get_access_request(request_id)
+        req = get_access_request(request_id)
         if not req:
             log.warning("run_fulfillment: request not found | id=%s", request_id)
             return {"error": "Request not found"}
 
         requester_id = req.get("requester_id", "")
-        profile = nocodb.get_employee_by_id(requester_id) if requester_id else {}
+        profile = get_employee_by_id(requester_id) if requester_id else {}
         profile = profile or {}
-        pkg = nocodb.get_access_package(req["package_id"]) or {}
+        pkg = get_access_package(req["package_id"]) or {}
         result = _fulfill_package(pkg, profile)
-        nocodb.update_request_fulfillment(request_id, result)
+        update_request_fulfillment(request_id, result)
         log.info("run_fulfillment complete | request_id=%s", request_id)
         return result
     except Exception as e:
