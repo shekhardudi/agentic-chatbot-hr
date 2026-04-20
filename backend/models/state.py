@@ -33,6 +33,19 @@ class AgentState(TypedDict):
     approval_status: Optional[str]
     fulfillment_result: Optional[dict]
 
+    # Leave application
+    leave_apply_type: Optional[str]
+    leave_apply_hours: Optional[float]
+    leave_apply_duration: Optional[float]
+    leave_apply_unit: Optional[str]
+    leave_apply_sufficient: Optional[bool]
+    leave_apply_current_balance: Optional[float]
+    leave_apply_new_balance: Optional[float]
+    leave_apply_status: Optional[str]
+
+    # Access request status
+    access_requests_data: Optional[list]
+
     # Output
     response: Optional[str]
     citations: Optional[list]

@@ -146,6 +146,48 @@ def approve_or_deny_request(request_id: str, decision: str, approver_email: str)
     return result
 
 
+def get_access_requests_by_employee(
+    employee_id: str,
+    request_id: str | None = None,
+    target_systems: list[str] | None = None,
+) -> list[dict]:
+    """Get access requests for an employee, joined with access_packages for names."""
+    sql = """
+        SELECT
+            ar.request_id,
+            ar.package_id,
+            ap.package_name,
+            ap.target_system,
+            ar.status,
+            ar.created_ts,
+            ar.decided_ts,
+            ar.fulfillment_result
+        FROM access_requests ar
+        LEFT JOIN access_packages ap ON ar.package_id = ap.package_id
+        WHERE ar.requester_id = %s
+    """
+    params: list = [employee_id]
+
+    if request_id:
+        sql += " AND ar.request_id = %s"
+        params.append(request_id)
+
+    if target_systems:
+        placeholders = ", ".join(["%s"] * len(target_systems))
+        sql += f" AND LOWER(ap.target_system) IN ({placeholders})"
+        params.extend([s.lower() for s in target_systems])
+
+    sql += " ORDER BY ar.created_ts DESC"
+
+    log.info("Fetching access requests | employee_id=%s | request_id=%s | systems=%s", employee_id, request_id, target_systems)
+    with ManagedConn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            results = _rows_to_dicts(cur)
+    log.info("Access requests returned %d rows | employee_id=%s", len(results), employee_id)
+    return results
+
+
 def update_request_fulfillment(request_id: str, result: dict) -> dict:
     log.info("Updating fulfillment | request_id=%s", request_id)
     sql = """

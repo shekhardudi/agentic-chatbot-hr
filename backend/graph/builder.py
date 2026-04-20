@@ -7,12 +7,22 @@ from functools import lru_cache
 from langgraph.graph import StateGraph, END
 
 from models.state import AgentState
-from graph.edges import route_intent, route_post_resolve, route_eligibility
+from graph.edges import (
+    route_intent,
+    route_post_resolve,
+    route_eligibility,
+    route_leave_apply_gather,
+    route_leave_apply_calculate,
+)
 
 from graph.nodes.resolve_user import resolve_user
 from graph.nodes.classify_intent import classify_intent
 from graph.nodes.clarify import clarify
 from graph.nodes.leave_balance import leave_balance_node
+from graph.nodes.leave_apply_gather import leave_apply_gather
+from graph.nodes.leave_apply_calculate import leave_apply_calculate
+from graph.nodes.leave_apply_update import leave_apply_update
+from graph.nodes.access_request_status import access_request_status_node
 from graph.nodes.policy_rewrite import policy_rewrite_node
 from graph.nodes.policy_retrieve import policy_retrieve_node
 from graph.nodes.policy_expand import policy_expand_node
@@ -35,6 +45,10 @@ def _build_graph():
     g.add_node("classify_intent", classify_intent)
     g.add_node("clarify", clarify)
     g.add_node("leave_balance", leave_balance_node)
+    g.add_node("leave_apply_gather", leave_apply_gather)
+    g.add_node("leave_apply_calculate", leave_apply_calculate)
+    g.add_node("leave_apply_update", leave_apply_update)
+    g.add_node("access_request_status", access_request_status_node)
     g.add_node("policy_rewrite", policy_rewrite_node)
     g.add_node("policy_retrieve", policy_retrieve_node)
     g.add_node("policy_expand", policy_expand_node)
@@ -57,9 +71,8 @@ def _build_graph():
         route_intent,
         {
             "clarify": "clarify",
-            "leave_balance": "resolve_user",
+            "resolve_user": "resolve_user",
             "policy_rewrite": "policy_rewrite",
-            "provision_map": "resolve_user",
             "unsupported": "compose_response",
         },
     )
@@ -70,7 +83,9 @@ def _build_graph():
         route_post_resolve,
         {
             "leave_balance": "leave_balance",
+            "leave_apply_gather": "leave_apply_gather",
             "provision_map": "provision_map",
+            "access_request_status": "access_request_status",
             "unsupported": "compose_response",
         },
     )
@@ -78,8 +93,30 @@ def _build_graph():
     # Clarify → done
     g.add_edge("clarify", "compose_response")
 
-    # HR worker
+    # HR worker — leave balance
     g.add_edge("leave_balance", "compose_response")
+
+    # Leave application pipeline
+    g.add_conditional_edges(
+        "leave_apply_gather",
+        route_leave_apply_gather,
+        {
+            "calculate": "leave_apply_calculate",
+            "compose": "compose_response",
+        },
+    )
+    g.add_conditional_edges(
+        "leave_apply_calculate",
+        route_leave_apply_calculate,
+        {
+            "update": "leave_apply_update",
+            "compose": "compose_response",
+        },
+    )
+    g.add_edge("leave_apply_update", "compose_response")
+
+    # Access request status
+    g.add_edge("access_request_status", "compose_response")
 
     # Policy RAG pipeline
     g.add_edge("policy_rewrite", "policy_retrieve")

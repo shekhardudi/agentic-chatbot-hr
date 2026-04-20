@@ -15,7 +15,8 @@ def compose_response_node(state: AgentState) -> AgentState:
     intent = state.get("intent")
     log.info("Composing response | intent=%s | session=%s", intent, state.get("session_id"))
 
-    if state.get("response") and intent not in ("leave_balance",):
+    _no_llm_reformat = ("leave_balance", "leave_apply", "access_request_status")
+    if state.get("response") and intent not in _no_llm_reformat:
         raw = state["response"]
         state["response"] = fast_chat(COMPOSE_PROMPT.format(answer=raw))
         log.debug("Response composed via LLM")
@@ -43,6 +44,67 @@ def compose_response_node(state: AgentState) -> AgentState:
             )
         state["response"] = "\n".join(lines)
         log.debug("Leave balance response composed | %d leave type(s)", len(balances))
+        return state
+
+    # --- Leave application ---
+    if intent == "leave_apply":
+        status = state.get("leave_apply_status")
+        if status == "applied":
+            leave_type = state.get("leave_apply_type", "").replace("_", " ").title()
+            hours = state.get("leave_apply_hours", 0)
+            duration = state.get("leave_apply_duration", 0)
+            unit = state.get("leave_apply_unit", "days")
+            new_bal = state.get("leave_apply_new_balance", 0)
+            state["response"] = (
+                f"Your **{leave_type}** leave application has been submitted successfully!\n\n"
+                f"- **Duration**: {duration} {unit} ({hours:.1f} hours)\n"
+                f"- **Remaining balance**: {new_bal:.1f} hours\n\n"
+                "Your leave has been recorded."
+            )
+            log.info("Leave apply response: applied | type=%s | hours=%.1f", leave_type, hours)
+        elif status in ("insufficient_balance", "missing_info", "update_failed", "no_balance_record"):
+            pass  # Response already set in the relevant node
+        else:
+            state["response"] = "Something went wrong processing your leave application."
+            log.warning("Leave apply — unexpected status: %s", status)
+        return state
+
+    # --- Access request status ---
+    if intent == "access_request_status":
+        requests_data = state.get("access_requests_data")
+        if not requests_data:
+            state["response"] = "You don't have any access requests on record."
+            log.info("Access request status — no records found")
+        else:
+            lines = ["Here are your access request(s):\n"]
+            for req in requests_data:
+                rid = req.get("request_id", "N/A")
+                pkg_name = req.get("package_name") or req.get("package_id", "Unknown")
+                target_sys = req.get("target_system", "")
+                status = req.get("status", "unknown")
+                created = req.get("created_ts", "")
+                decided = req.get("decided_ts", "")
+
+                status_label = {
+                    "pending": "Pending",
+                    "pending_approval": "Pending Approval",
+                    "approved": "Approved",
+                    "denied": "Denied",
+                    "fulfilled": "Fulfilled",
+                }.get(status, status.replace("_", " ").title())
+
+                sys_label = f" ({target_sys})" if target_sys else ""
+                line = (
+                    f"- **{rid}** — {pkg_name}{sys_label}\n"
+                    f"  Status: **{status_label}**\n"
+                    f"  Submitted: {str(created)[:10] if created else 'N/A'}"
+                )
+                if decided:
+                    line += f" | Decided: {str(decided)[:10]}"
+                lines.append(line)
+
+            state["response"] = "\n".join(lines)
+            log.info("Access request status response | records=%d", len(requests_data))
         return state
 
     # --- Provisioning pending ---

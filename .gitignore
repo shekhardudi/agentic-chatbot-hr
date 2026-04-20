@@ -32,3 +32,5 @@ postgres_data/
 development_markdowns/
 output_markdown/
 som_backend/
+deployment/
+deployment_markdown/

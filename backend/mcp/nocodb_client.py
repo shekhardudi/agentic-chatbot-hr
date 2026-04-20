@@ -118,6 +118,27 @@ class NocoDBMCPClient:
         self._log.info("Leave balance records: %d | employee_id=%s", len(rows), employee_id)
         return rows
 
+    def update_leave_balance(
+        self,
+        employee_id: str,
+        leave_type: str,
+        new_balance_hours: float,
+        new_used_hours: float,
+    ) -> dict:
+        """Update leave balance after leave application."""
+        where = f"(employee_id,eq,{employee_id})~and(leave_type,eq,{leave_type})"
+        rows = self._list("leave_balances", where=where)
+        if not rows:
+            self._log.warning("No leave balance row to update | employee_id=%s | type=%s", employee_id, leave_type)
+            return {}
+        row = rows[0]
+        row_id = row.get("Id") or row.get("id")
+        self._log.info("Updating leave balance | employee_id=%s | type=%s | new_balance=%.1f", employee_id, leave_type, new_balance_hours)
+        return self._update("leave_balances", str(row_id), {
+            "balance_hours": new_balance_hours,
+            "used_ytd_hours": new_used_hours,
+        })
+
     # ------------------------------------------------------------------
     # Access package operations
     # ------------------------------------------------------------------

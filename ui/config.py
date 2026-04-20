@@ -1,6 +1,7 @@
 import os
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+SERVICE_HOST = os.getenv("SERVICE_HOST", "localhost")
 
 PERSONAS = [
     {"full_name": "Shekhar Dudi", "email": "shekhar.dudi@demo.local", "role": "Lead AI Engineer"},
