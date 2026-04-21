@@ -12,6 +12,19 @@ log = get_logger(__name__)
 
 
 def leave_balance_node(state: AgentState) -> AgentState:
+    """Fetch leave balance data from NocoDB for the resolved employee.
+
+    Performs a deterministic database lookup — no LLM calls. If leave_type
+    is present in entities, fetches only that type; otherwise fetches all
+    balance records for the employee.
+
+    Args:
+        state: AgentState with employee_id and optional entities.leave_type.
+
+    Returns:
+        Updated AgentState with leave_data populated on success, or response
+        set to an error message when employee_id is missing or lookup fails.
+    """
     employee_id = state.get("employee_id")
     entities = state.get("entities") or {}
     leave_type = entities.get("leave_type")

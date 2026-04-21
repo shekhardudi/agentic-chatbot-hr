@@ -10,13 +10,31 @@ log = get_logger(__name__)
 
 
 def audit_node(state: AgentState) -> AgentState:
+    """Write a full request trace to the audit_events table.
+
+    Always runs as the final node in the graph, regardless of which worker
+    handled the request. Derives the worker name from the intent, assembles
+    the tools_called list from state flags, and collects RAG evidence metadata
+    from retrieved_chunks.
+
+    Audit write failures are caught and logged as non-fatal so they don't
+    break the user-facing response.
+
+    Args:
+        state: Final AgentState after all worker and compose nodes have run.
+
+    Returns:
+        State unchanged — audit_node is a side-effect-only terminal node.
+    """
     intent = state.get("intent", "unknown")
     session_id = state.get("session_id")
 
     worker_map = {
         "leave_balance": "hr_worker",
+        "leave_apply": "hr_worker",
         "policy_query": "policy_rag_worker",
         "software_provision": "provisioning_worker",
+        "access_request_status": "hr_worker",
         "unsupported": "clarify_or_fallback",
     }
     worker = worker_map.get(intent, "unknown")
@@ -24,6 +42,10 @@ def audit_node(state: AgentState) -> AgentState:
     tools_called = []
     if state.get("leave_data"):
         tools_called += ["get_employee_profile", "get_leave_balance"]
+    if state.get("leave_apply_status") == "applied":
+        tools_called += ["get_leave_balance", "update_leave_balance"]
+    if state.get("access_requests_data") is not None:
+        tools_called.append("get_access_requests_by_employee")
     if state.get("retrieved_chunks"):
         tools_called += ["vector_search", "fulltext_search"]
     if state.get("request_id"):

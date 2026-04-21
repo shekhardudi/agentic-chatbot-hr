@@ -11,6 +11,21 @@ nocodb = NocoDBMCPClient(settings.nocodb_url, settings.nocodb_api_token, setting
 
 
 def leave_apply_update(state: AgentState) -> AgentState:
+    """Commit the approved leave deduction to NocoDB.
+
+    Fetches the current used_ytd_hours, adds the applied hours, and updates
+    both balance_hours and used_ytd_hours in the leave_balances table.
+    Sets leave_apply_status to "applied" on success or "update_failed" if
+    NocoDB returns a falsy result.
+
+    Args:
+        state: AgentState with employee_id, leave_apply_type, leave_apply_hours,
+            and leave_apply_new_balance populated.
+
+    Returns:
+        Updated AgentState with leave_apply_status set to "applied" or
+        "update_failed". On failure, response is set to an error message.
+    """
     employee_id = state["employee_id"]
     leave_type = state["leave_apply_type"]
     new_balance = state["leave_apply_new_balance"]

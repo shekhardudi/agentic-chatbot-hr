@@ -9,6 +9,22 @@ log = get_logger(__name__)
 
 
 def provision_eligibility_node(state: AgentState) -> AgentState:
+    """Apply rules-based eligibility checks for the requested access packages.
+
+    No LLM calls — pure rule evaluation:
+    - Employee must have status="active".
+    - Employee must have a manager_id on record.
+    - Gitea packages (PKG-GH-*) require Engineering department and non-contractor type.
+
+    Fetches the employee profile from the database if it's not already in state.
+
+    Args:
+        state: AgentState with employee_email, matched_packages, and optionally
+            employee_profile already populated.
+
+    Returns:
+        Updated AgentState with eligible (bool) and eligibility_reason set.
+    """
     email = state["employee_email"]
     packages = state.get("matched_packages") or []
     log.info("Eligibility check | email=%s | packages=%s", email, packages)

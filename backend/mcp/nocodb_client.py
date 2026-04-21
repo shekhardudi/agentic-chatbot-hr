@@ -25,6 +25,14 @@ class NocoDBMCPClient:
     # ------------------------------------------------------------------
 
     def _resolve_base_id(self) -> str:
+        """Return the NocoDB base_id, resolving it from the API if not configured.
+
+        Returns:
+            The base_id string for all subsequent table-level API calls.
+
+        Raises:
+            RuntimeError: If no bases are found in NocoDB.
+        """
         if self._base_id:
             return self._base_id
         resp = self.session.get(f"{self.base_url}/api/v2/meta/bases/")
@@ -37,6 +45,20 @@ class NocoDBMCPClient:
         return self._base_id
 
     def _get_table_id(self, table_name: str) -> str:
+        """Return the NocoDB table_id for the given table name, with caching.
+
+        Fetches all tables for the base on first call and caches their IDs
+        to avoid repeated meta API calls.
+
+        Args:
+            table_name: The display name of the table (e.g. "employees").
+
+        Returns:
+            The NocoDB table identifier string.
+
+        Raises:
+            ValueError: If the table is not found in the base.
+        """
         if table_name in self._table_ids:
             return self._table_ids[table_name]
         base_id = self._resolve_base_id()
@@ -49,6 +71,16 @@ class NocoDBMCPClient:
         return self._table_ids[table_name]
 
     def _list(self, table_name: str, where: str = "", limit: int = 100) -> list[dict]:
+        """Fetch rows from a NocoDB table with an optional filter expression.
+
+        Args:
+            table_name: Display name of the NocoDB table.
+            where: NocoDB filter string (e.g. "(email,eq,alice@example.com)").
+            limit: Maximum number of rows to return.
+
+        Returns:
+            List of row dicts as returned by the NocoDB API.
+        """
         table_id = self._get_table_id(table_name)
         base_id = self._resolve_base_id()
         params = {"limit": limit}
@@ -62,6 +94,15 @@ class NocoDBMCPClient:
         return rows
 
     def _create(self, table_name: str, data: dict) -> dict:
+        """Insert a new row into a NocoDB table.
+
+        Args:
+            table_name: Display name of the NocoDB table.
+            data: Dict of field values for the new row.
+
+        Returns:
+            The created row dict as returned by the NocoDB API.
+        """
         table_id = self._get_table_id(table_name)
         base_id = self._resolve_base_id()
         self._log.debug("NocoDB CREATE %s", table_name)
@@ -73,6 +114,16 @@ class NocoDBMCPClient:
         return resp.json()
 
     def _update(self, table_name: str, row_id: str, data: dict) -> dict:
+        """Patch an existing row in a NocoDB table.
+
+        Args:
+            table_name: Display name of the NocoDB table.
+            row_id: The NocoDB row identifier (numeric "Id" or row PK).
+            data: Dict of fields to update on the row.
+
+        Returns:
+            The updated row dict as returned by the NocoDB API.
+        """
         table_id = self._get_table_id(table_name)
         base_id = self._resolve_base_id()
         self._log.debug("NocoDB PATCH %s | row_id=%s", table_name, row_id)
@@ -88,6 +139,14 @@ class NocoDBMCPClient:
     # ------------------------------------------------------------------
 
     def get_employee_profile(self, email: str) -> dict | None:
+        """Look up an employee by email address.
+
+        Args:
+            email: The employee's email address.
+
+        Returns:
+            Employee row dict, or None if not found.
+        """
         self._log.info("Fetching employee profile | email=%s", email)
         results = self._list("employees", where=f"(email,eq,{email})")
         if results:
@@ -97,6 +156,14 @@ class NocoDBMCPClient:
         return results[0] if results else None
 
     def get_employee_by_id(self, employee_id: str) -> dict | None:
+        """Look up an employee by internal employee_id.
+
+        Args:
+            employee_id: The internal employee identifier (e.g. "EMP-001").
+
+        Returns:
+            Employee row dict, or None if not found.
+        """
         self._log.info("Fetching employee profile | employee_id=%s", employee_id)
         results = self._list("employees", where=f"(employee_id,eq,{employee_id})")
         if results:
@@ -110,6 +177,17 @@ class NocoDBMCPClient:
     # ------------------------------------------------------------------
 
     def get_leave_balance(self, employee_id: str, leave_type: str | None = None) -> list[dict]:
+        """Fetch leave balance records for an employee.
+
+        Args:
+            employee_id: The employee's internal identifier.
+            leave_type: Optional leave type filter (e.g. "annual", "sick").
+                When None, all leave types are returned.
+
+        Returns:
+            List of leave_balances row dicts with balance_hours, used_ytd_hours,
+            and accrued_ytd_hours.
+        """
         self._log.info("Fetching leave balance | employee_id=%s | type=%s", employee_id, leave_type)
         where = f"(employee_id,eq,{employee_id})"
         if leave_type:
@@ -144,9 +222,22 @@ class NocoDBMCPClient:
     # ------------------------------------------------------------------
 
     def list_access_packages(self) -> list[dict]:
+        """Return all access package records from NocoDB.
+
+        Returns:
+            List of access_packages row dicts.
+        """
         return self._list("access_packages")
 
     def get_access_package(self, package_id: str) -> dict | None:
+        """Fetch a single access package by its package_id.
+
+        Args:
+            package_id: Package identifier (e.g. "PKG-GH-ENG-STD").
+
+        Returns:
+            Access package row dict, or None if not found.
+        """
         results = self._list("access_packages", where=f"(package_id,eq,{package_id})")
         return results[0] if results else None
 
@@ -161,6 +252,17 @@ class NocoDBMCPClient:
         package_id: str,
         approver_id: str,
     ) -> dict:
+        """Create a new access request in NocoDB with status 'pending_approval'.
+
+        Args:
+            requester_id: Employee ID of the person requesting access.
+            requester_email: Email of the requesting employee.
+            package_id: ID of the access package being requested.
+            approver_id: Employee ID of the approving manager.
+
+        Returns:
+            The created access_requests row dict.
+        """
         from datetime import datetime, timezone
         data = {
             "request_id": f"AR-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
@@ -178,11 +280,27 @@ class NocoDBMCPClient:
         return result
 
     def list_access_requests(self, status: str | None = None) -> list[dict]:
+        """List access requests from NocoDB, optionally filtered by status.
+
+        Args:
+            status: Optional status filter (e.g. "pending_approval").
+
+        Returns:
+            List of access_requests row dicts.
+        """
         self._log.debug("Listing access requests | status=%s", status)
         where = f"(status,eq,{status})" if status else ""
         return self._list("access_requests", where=where)
 
     def get_access_request(self, request_id: str) -> dict | None:
+        """Fetch a single access request by its AR-* identifier.
+
+        Args:
+            request_id: The request identifier string.
+
+        Returns:
+            Access request row dict, or None if not found.
+        """
         self._log.debug("Fetching access request | id=%s", request_id)
         results = self._list("access_requests", where=f"(request_id,eq,{request_id})")
         return results[0] if results else None
@@ -190,6 +308,19 @@ class NocoDBMCPClient:
     def approve_or_deny_request(
         self, request_id: str, decision: str, approver_email: str
     ) -> dict:
+        """Update an access request with the manager's approval or denial.
+
+        Args:
+            request_id: The AR-* identifier of the request to update.
+            decision: Either "approved" or "denied".
+            approver_email: Email of the manager making the decision.
+
+        Returns:
+            The updated access_requests row dict.
+
+        Raises:
+            ValueError: If the request_id is not found.
+        """
         from datetime import datetime, timezone
         self._log.info("Decision on request %s: %s by %s", request_id, decision, approver_email)
         req = self.get_access_request(request_id)
@@ -203,6 +334,18 @@ class NocoDBMCPClient:
         return self._update("access_requests", str(row_id), data)
 
     def update_request_fulfillment(self, request_id: str, result: dict) -> dict:
+        """Mark an access request as fulfilled and store the provisioning result.
+
+        Args:
+            request_id: The AR-* identifier of the fulfilled request.
+            result: Provisioning outcome dict to store as JSON.
+
+        Returns:
+            The updated access_requests row dict.
+
+        Raises:
+            ValueError: If the request_id is not found.
+        """
         import json
         self._log.info("Updating fulfillment result for request %s", request_id)
         req = self.get_access_request(request_id)

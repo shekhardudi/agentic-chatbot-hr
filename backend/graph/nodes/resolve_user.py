@@ -12,6 +12,18 @@ log = get_logger(__name__)
 
 
 def resolve_user(state: AgentState) -> AgentState:
+    """Look up the employee profile from NocoDB and populate state.
+
+    On success, sets employee_id and employee_profile in state. On failure
+    or when the employee is not found, sets both to None. Errors are caught
+    and logged so the pipeline can continue with a graceful degradation path.
+
+    Args:
+        state: AgentState with employee_email populated.
+
+    Returns:
+        Updated AgentState with employee_id and employee_profile set (or None).
+    """
     email = state["employee_email"]
     log.info("Resolving employee | email=%s", email)
     try:

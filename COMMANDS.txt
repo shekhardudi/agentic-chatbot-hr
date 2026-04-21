@@ -5,20 +5,45 @@
 PREREQUISITES
 -------------
 - Docker Desktop running
-- Python 3.11+
-- Copy .env.example to .env and fill in ANTHROPIC_API_KEY
-  (the Gitea/Mattermost/NocoDB tokens are filled in after
-   first-run setup of those services)
+- Python 3.12+
 
 --------------------------------------------------------------
-STEP 1 — Start all services (Postgres, NocoDB, Gitea, Mattermost)
+STEP 0 — Create local Python environment (project root)
 --------------------------------------------------------------
 
-  docker-compose up -d
+  cd /path/to/agentic_hr
+  python -m venv .venv
+  source .venv/bin/activate
+  pip install -r backend/requirements.txt -r ui/requirements.txt -r ingestion/requirements.txt pytest
+
+--------------------------------------------------------------
+STEP 1 — Create .env
+--------------------------------------------------------------
+
+  cp .env.example .env
+
+Set at least:
+  - LLM_PROVIDER=anthropic or openai
+  - ANTHROPIC_API_KEY (if anthropic)
+  - OPENAI_API_KEY (if openai)
+
+Then set service tokens after first-time service setup:
+  - NOCODB_API_TOKEN
+  - GITEA_ADMIN_TOKEN
+  - MATTERMOST_ADMIN_TOKEN
+
+Optional but recommended:
+  - NOCODB_BASE_ID
+
+--------------------------------------------------------------
+STEP 2 — Start infrastructure (Postgres, NocoDB, Gitea, Mattermost)
+--------------------------------------------------------------
+
+  docker compose up -d
 
 Check all containers are healthy:
 
-  docker-compose ps
+  docker compose ps
 
 Services available after startup:
   NocoDB      → http://localhost:8080   (create admin account on first visit)
@@ -27,7 +52,7 @@ Services available after startup:
   PostgreSQL  → localhost:5432
 
 --------------------------------------------------------------
-STEP 2 — After first-visit setup, generate API tokens
+STEP 3 — After first-visit setup, generate API tokens
 --------------------------------------------------------------
 
 NocoDB:
@@ -43,18 +68,18 @@ Mattermost:
   → Set MATTERMOST_ADMIN_TOKEN in .env
 
 --------------------------------------------------------------
-STEP 3 — Generate synthetic data
+STEP 4 — Generate synthetic data
 --------------------------------------------------------------
 
   cd /path/to/agentic_hr
-  pip install faker requests
+  source .venv/bin/activate
   python synthetic_data/generate.py
 
 Output files: synthetic_data/output/*.json
 SQL fallback: synthetic_data/sql/seed.sql
 
 --------------------------------------------------------------
-STEP 4 — Seed PostgreSQL with synthetic data
+STEP 5 — Seed PostgreSQL with synthetic data
 --------------------------------------------------------------
 
   docker exec -i agentic_hr_postgres psql -U agentic_hr -d agentic_hr < synthetic_data/sql/seed.sql
@@ -64,23 +89,22 @@ so seeded data is visible in NocoDB automatically — no separate
 NocoDB seeding step is needed.
 
 --------------------------------------------------------------
-STEP 5 — Ingest HR policy PDFs
+STEP 6 — Ingest HR policy PDFs
 --------------------------------------------------------------
 
-  cd ingestion
-  pip install -r requirements.txt
-  cd ..
-
-  # Run from project root:
+  cd /path/to/agentic_hr
+  source .venv/bin/activate
   python -m ingestion.ingest
 
 PDFs are read from: hr_policy_pdfs/*.pdf
 Parsed markdown saved to: ingestion/output_markdown/
 
 --------------------------------------------------------------
-STEP 6 — Start the FastAPI backend
+STEP 7 — Start the FastAPI backend
 --------------------------------------------------------------
 
+  cd /path/to/agentic_hr
+  source .venv/bin/activate
   cd backend
   uvicorn main:app --reload --port 8000
 
@@ -88,16 +112,25 @@ API docs:  http://localhost:8000/docs
 Health:    http://localhost:8000/health
 
 --------------------------------------------------------------
-STEP 7 — Start the Streamlit UI
+STEP 8 — Start the Streamlit UI
 --------------------------------------------------------------
 
+  cd /path/to/agentic_hr
+  source .venv/bin/activate
   cd ui
-  pip install -r requirements.txt
   streamlit run app.py --server.port 8501
 
 UI:        http://localhost:8501
   → Chat page:      home page
   → Approvals page: sidebar → Manager Approvals
+
+--------------------------------------------------------------
+STEP 9 — Run tests
+--------------------------------------------------------------
+
+  cd /path/to/agentic_hr
+  source .venv/bin/activate
+  pytest -q tests
 
 --------------------------------------------------------------
 DEMO FLOWS TO TEST
@@ -120,28 +153,35 @@ Flow 3 — Software provisioning:
 STOP ALL SERVICES
 --------------------------------------------------------------
 
-  docker-compose down
+  docker compose down
 
 To also delete all data volumes:
-  docker-compose down -v
+  docker compose down -v
 
 --------------------------------------------------------------
 ENVIRONMENT VARIABLES REFERENCE (.env)
 --------------------------------------------------------------
 
-ANTHROPIC_API_KEY=sk-ant-...       # Required
-NOCODB_API_TOKEN=...               # After NocoDB setup
-GITEA_ADMIN_TOKEN=...              # After Gitea setup
-MATTERMOST_ADMIN_TOKEN=...         # After Mattermost setup
+LLM_PROVIDER=anthropic             # anthropic or openai
+ANTHROPIC_API_KEY=sk-ant-...       # Required if LLM_PROVIDER=anthropic
+OPENAI_API_KEY=sk-...              # Required if LLM_PROVIDER=openai
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_USER=agentic_hr
 POSTGRES_PASSWORD=agentic_hr_dev
 POSTGRES_DB=agentic_hr
 NOCODB_URL=http://localhost:8080
+NOCODB_BASE_ID=...                 # Optional, recommended
+NOCODB_API_TOKEN=...               # After NocoDB setup
 GITEA_URL=http://localhost:3000
+GITEA_ADMIN_TOKEN=...              # After Gitea setup
 MATTERMOST_URL=http://localhost:8065
+MATTERMOST_ADMIN_TOKEN=...         # After Mattermost setup
 LLM_FAST_MODEL=claude-haiku-4-5-20251001
 LLM_STRONG_MODEL=claude-sonnet-4-6
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 EMBEDDING_DIMENSION=384
+BACKEND_PORT=8000
+BACKEND_URL=http://localhost:8000
+SERVICE_HOST=localhost
+LOG_LEVEL=INFO

@@ -13,6 +13,20 @@ log = get_logger(__name__)
 
 
 def classify_intent(state: AgentState) -> AgentState:
+    """Triage the employee message to extract intent, entities, and confidence.
+
+    Calls the fast LLM with the triage prompt and parses the JSON response.
+    Falls back to regex extraction if the model returns non-JSON text.
+    Sets needs_clarification=True when confidence < 0.6 and intent is
+    unsupported, triggering the clarify branch.
+
+    Args:
+        state: AgentState with at least the 'message' field populated.
+
+    Returns:
+        Updated AgentState with intent, entities, confidence, and
+        needs_clarification set.
+    """
     log.info("Classifying intent | message=%r", state["message"][:80])
     prompt = TRIAGE_PROMPT.format(message=state["message"])
     raw = fast_chat(prompt)

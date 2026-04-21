@@ -1,6 +1,11 @@
 import uuid
+import warnings
 import streamlit as st
-import streamlit.components.v1 as components
+
+# Suppress the deprecation warning — components.v1.html is needed for JS execution
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message=".*st\.components\.v1\.html.*")
+    import streamlit.components.v1 as components
 
 from config import PERSONAS, PAGE_TITLE, SERVICE_HOST
 from api_client import send_message
@@ -28,18 +33,18 @@ EXAMPLE_QUERIES = {
     ],
     "🔧 Software Access": [
         "I need access to Gitea",
-        "Can I get Mattermost access for my team?",
+        "Can I get Mattermost access?",
         "I want access to Gitea and Mattermost",
     ],
     "📦 Access Request Status": [
         "What's the status of my access requests?",
         "Did my Gitea request get approved?",
-        "Check status of request AR-0001",
+        "Did my Mattermost request get approved?",
     ],
 }
 
 # ---------------------------------------------------------------------------
-# How-it-works content
+# Guide content
 # ---------------------------------------------------------------------------
 HOW_IT_WORKS = """
 This is an **agentic HR assistant** powered by a \
@@ -79,22 +84,45 @@ with citations where applicable.
 **5 — Audit Trail**
 Every interaction is logged with intent, status, \
 and timing metadata.
+"""
 
----
+TIPS = """
+**Switching Personas**
+Use the sidebar dropdown to test as different employees. \
+Each persona has its own leave balances, manager, and \
+access packages.
 
-**Tips**
-- Switch personas in the sidebar to test as \
-different employees.
-- Use **Manager Approvals** to approve / deny \
-pending software-access requests.
-- Integrated systems (NocoDB, Gitea, Mattermost) \
-are linked in the sidebar.
+**Apply for Leave**
+Say *"I want to take 3 days annual leave"*. If you omit \
+the type or duration the assistant will ask one follow-up \
+question before submitting.
+
+**Check Access Requests**
+Ask *"What's the status of my Gitea request?"* for a \
+specific system, or *"Show all my requests"* for everything.
+
+**Manager Approvals**
+Open the **Manager Approvals** page to approve or deny \
+pending software-access requests. Provisioning in Gitea \
+and Mattermost runs automatically once approved.
+
+**Policy Citations**
+Policy answers include the source document and section. \
+Ask follow-up questions — the assistant rewrites and \
+re-searches on each turn.
+
+**Integrated Systems**
+The sidebar links take you directly to the live NocoDB, \
+Gitea, and Mattermost instances that back every response.
+Check Agentic_hr in Nocodb
+Check usersin Gitea
+Check Team Members in Mattermost
 """
 
 # --- Title row with guide-panel toggle ---
 _title_left, _title_right = st.columns([6, 1])
 with _title_left:
-    st.title("HR Assistant")
+    st.title("HR/IT Provisioning Assistant")
 with _title_right:
     st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
     st.toggle("📖 Guide", value=True, key="show_guide")
@@ -116,25 +144,25 @@ with st.sidebar:
             "icon": "🗄️",
             "category": "HR Data Platform",
             "desc": "No-code database powering employee records & leave tracking",
-            "url": f"http://{SERVICE_HOST}:8080",
+            "url": "/nocodb/",
         },
         {
             "name": "Gitea",
             "icon": "🔀",
             "category": "Version Control",
             "desc": "Git service hosting policy docs & HR workflow configs",
-            "url": f"http://{SERVICE_HOST}:3000",
+            "url": "/gitea/",
         },
         {
             "name": "Mattermost",
             "icon": "💬",
             "category": "Team Collaboration",
             "desc": "Messaging hub for approvals, notifications & team comms",
-            "url": f"http://{SERVICE_HOST}:8065",
+            "url": "/mattermost/",
         },
     ]
 
-    cards_html = '<div style="margin-top:8px;"><strong style="font-size:0.95rem;">Integrated Systems (Click and checkout):</strong></div>'
+    cards_html = '<div style="margin-top:8px;"><strong style="font-size:1.05rem;">Integrated Systems</strong><br><span style="font-size:0.9rem; color:#d4d4d4;">(Click and checkout)</span></div>'
     for tool in TOOLS:
         cards_html += f"""<a href="{tool['url']}" target="_blank" style="
             text-decoration:none; color:inherit; display:block;
@@ -153,6 +181,7 @@ with st.sidebar:
                 </div>
             </div>
         </a>"""
+    cards_html += '<div style="font-size:0.75rem; color:#fff; margin-top:8px; padding-top:5px; border-top:1px solid #d4d4d4;">🔒 Self-signed authentication—pages may take a few seconds to load.</div>'
     st.markdown(cards_html, unsafe_allow_html=True)
 
 # --- Session state init ---
@@ -164,7 +193,7 @@ if "employee_email" not in st.session_state:
     st.session_state["employee_email"] = PERSONAS[0]["email"]
 
 # ---------------------------------------------------------------------------
-# Process input BEFORE rendering columns so messages appear inside chat_col
+# Message processing
 # ---------------------------------------------------------------------------
 def _process_message(text: str) -> None:
     """Send a message to the backend and append both user + assistant msgs."""
@@ -187,24 +216,27 @@ def _process_message(text: str) -> None:
             "role": "assistant",
             "content": f"⚠️ Backend error: {e}",
         })
+    # Signal that the page should scroll to bottom on next render
+    st.session_state["_scroll_to_bottom"] = True
 
-# Capture chat_input (always at page level so Streamlit pins it to bottom)
-user_input = st.chat_input("Ask an HR question…")
+# Capture chat_input — always at page level so Streamlit pins it to bottom
+user_input = st.chat_input("Ask an HR/IT Provisioning question…")
 
 # ---------------------------------------------------------------------------
-# Layout: chat + optional guide panel (collapsible right sidebar)
+# Layout: chat column + optional fixed guide panel
 # ---------------------------------------------------------------------------
 _guide_open = st.session_state.get("show_guide", True)
 
 if _guide_open:
     st.markdown(
         """<style>
-        /* right-panel: fixed sidebar pinned to viewport */
+        /* Right panel: fixed to viewport — does not scroll with the page */
         section[data-testid="stMain"] [data-testid="stColumn"]:nth-child(2) {
             position: fixed !important;
             right: 0;
             top: 3.5rem;
             width: 24% !important;
+            max-width: 24% !important;
             height: calc(100vh - 3.5rem);
             overflow-y: auto;
             border-left: 1px solid rgba(250,250,250,0.08);
@@ -218,9 +250,11 @@ if _guide_open:
         section[data-testid="stMain"] [data-testid="stColumn"]:nth-child(2)::-webkit-scrollbar-thumb {
             background: #555; border-radius: 2px;
         }
-        /* constrain chat input to the chat column width (3/4 of main) */
-        .stChatInput {
-            max-width: 75%;
+        /* Keep chat input within the chat column (left 3/4) */
+        .stChatInput { max-width: 75%; }
+        /* Ensure left chat column scrolls independently */
+        section[data-testid="stMain"] [data-testid="stColumn"]:nth-child(1) {
+            max-width: 75% !important;
         }
         </style>""",
         unsafe_allow_html=True,
@@ -230,23 +264,46 @@ else:
     chat_col = st.container()
     info_col = None
 
-# --- Chat history + inline spinner ---
+# --- Chat history ---
 with chat_col:
     for msg in st.session_state["chat_history"]:
         message_bubble(msg["role"], msg["content"], msg.get("citations"))
         if msg.get("status") and msg.get("request_id"):
             status_badge(msg["status"], msg.get("request_id"))
 
-    # Process new input inside chat_col so spinner appears below the last message
+    # Invisible anchor at the bottom of chat — always scroll into view
+    if st.session_state.get("chat_history"):
+        st.markdown(
+            '<div id="chat-anchor" style="height:1px;"></div>',
+            unsafe_allow_html=True,
+        )
+        components.html("""<script>
+            const anchor = parent.document.getElementById('chat-anchor');
+            if (anchor) {
+                anchor.scrollIntoView({ block: 'start' });
+            }
+        </script>""", height=0)
+
     if user_input:
+        # Show the user's message immediately
+        message_bubble("user", user_input)
+        # Place anchor after user message, scroll to it to show spinner
+        st.markdown(
+            '<div id="input-anchor" style="height:1px;"></div>',
+            unsafe_allow_html=True,
+        )
+        components.html("""<script>
+            var a = parent.document.getElementById('input-anchor');
+            if (a) a.scrollIntoView({ block: 'start' });
+        </script>""", height=0)
         with st.spinner("Thinking…"):
             _process_message(user_input)
         st.rerun()
 
-# --- Guide panel (right sidebar) ---
+# --- Guide panel (fixed right sidebar) ---
 if info_col is not None:
     with info_col:
-        tab_examples, tab_howto = st.tabs(["🧪 Try It Out", "📖 How It Works"])
+        tab_examples, tab_howto, tab_tips = st.tabs(["🧪 Try It Out", "📖 How It Works", "💡 Tips"])
 
         with tab_examples:
             for category, queries in EXAMPLE_QUERIES.items():
@@ -259,8 +316,11 @@ if info_col is not None:
         with tab_howto:
             st.markdown(HOW_IT_WORKS)
 
+        with tab_tips:
+            st.markdown(TIPS)
+
 # ---------------------------------------------------------------------------
-# JS injection: populate chat input when an example query was clicked
+# JS: populate chat input when a "Try It Out" example is clicked
 # ---------------------------------------------------------------------------
 if st.session_state.get("_prefill_query"):
     _prefill = st.session_state.pop("_prefill_query")
@@ -276,3 +336,8 @@ if st.session_state.get("_prefill_query"):
             el.focus();
         }}
     </script>""", height=0)
+
+# ---------------------------------------------------------------------------
+# Clear scroll flag if set (scrolling now handled inline after chat render)
+# ---------------------------------------------------------------------------
+st.session_state.pop("_scroll_to_bottom", None)

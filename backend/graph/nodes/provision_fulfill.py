@@ -23,6 +23,19 @@ log = get_logger(__name__)
 
 
 def _fulfill_package(package: dict, employee_profile: dict) -> dict:
+    """Dispatch provisioning for a single access package.
+
+    Detects the target system from the package_id ("GH" → Gitea, "SL" →
+    Mattermost) and calls the appropriate client. Payload is JSON-decoded
+    when stored as a string.
+
+    Args:
+        package: Access package dict with package_id and payload.
+        employee_profile: Employee dict with email, full_name, github_username.
+
+    Returns:
+        Dict with package_id and nested system result keys ("gitea", "mattermost").
+    """
     pkg_id = package.get("package_id", "")
     payload = package.get("payload", {})
     if isinstance(payload, str):
@@ -53,6 +66,20 @@ def _fulfill_package(package: dict, employee_profile: dict) -> dict:
 
 
 def provision_fulfill_node(state: AgentState) -> AgentState:
+    """Fulfill an approved access request by calling the external provisioning APIs.
+
+    Looks up the access request and package from the database, then calls
+    _fulfill_package() to dispatch to Gitea/Mattermost. Updates the database
+    record and sets fulfillment_result in state. Errors are caught and stored
+    in fulfillment_result rather than propagating.
+
+    Args:
+        state: AgentState with request_id and employee_email.
+
+    Returns:
+        Updated AgentState with fulfillment_result and approval_status="fulfilled"
+        on success, or fulfillment_result={"error": ...} on failure.
+    """
     request_id = state.get("request_id")
     email = state["employee_email"]
     log.info("Fulfilling provisioning | request_id=%s | email=%s", request_id, email)

@@ -15,6 +15,14 @@ log = get_logger(__name__)
 
 @lru_cache(maxsize=1)
 def _get_model():
+    """Load and cache the sentence-transformers embedding model.
+
+    The model is loaded on first call and held in memory for the lifetime of
+    the process. Subsequent calls return the cached instance.
+
+    Returns:
+        A SentenceTransformer model ready for encoding.
+    """
     log.info("Loading embedding model: %s", EMBEDDING_MODEL)
     from sentence_transformers import SentenceTransformer
     model = SentenceTransformer(EMBEDDING_MODEL)

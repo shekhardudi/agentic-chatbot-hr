@@ -20,6 +20,23 @@ def calculate_leave_hours(duration: float, unit: str) -> float:
 
 
 def leave_apply_calculate(state: AgentState) -> AgentState:
+    """Validate requested leave hours against the employee's current balance.
+
+    Pure Python — no LLM calls. Converts the requested duration to hours
+    (1 day = 8 hours), fetches the current balance from NocoDB, and compares.
+    Sets leave_apply_sufficient=True and pre-computes leave_apply_new_balance
+    when the balance is sufficient. Sets a user-facing error response when
+    insufficient or when no balance record exists.
+
+    Args:
+        state: AgentState with leave_apply_type, leave_apply_duration,
+            leave_apply_unit, and employee_id populated.
+
+    Returns:
+        Updated AgentState with leave_apply_hours, leave_apply_sufficient,
+        leave_apply_current_balance, leave_apply_new_balance, and
+        leave_apply_status set.
+    """
     employee_id = state.get("employee_id")
     leave_type = state["leave_apply_type"]
     duration = state["leave_apply_duration"]

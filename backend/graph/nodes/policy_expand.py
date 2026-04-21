@@ -10,6 +10,18 @@ log = get_logger(__name__)
 
 
 def policy_expand_node(state: AgentState) -> AgentState:
+    """Expand retrieved child chunks to their parent sections for broader context.
+
+    Collects unique parent_ids from the retrieved chunks and fetches the full
+    parent section (heading, content, summary, document filename) for each.
+    Parent sections are passed to the grading node to provide richer evidence.
+
+    Args:
+        state: AgentState with retrieved_chunks populated by policy_retrieve_node.
+
+    Returns:
+        Updated AgentState with parent_sections list loaded from the database.
+    """
     chunks = state.get("retrieved_chunks") or []
     parent_ids = list({c["parent_id"] for c in chunks})
     log.info("Expanding %d chunk(s) to %d unique parent section(s)", len(chunks), len(parent_ids))

@@ -17,6 +17,20 @@ log = get_logger(__name__)
 
 
 def policy_retrieve_node(state: AgentState) -> AgentState:
+    """Retrieve relevant policy chunks using hybrid vector + full-text search.
+
+    Batch-embeds all query variants in a single model.encode() call, then
+    fires all vector searches and FTS searches in parallel via a thread pool.
+    Deduplicates results keeping the highest score per child_id, then fuses
+    the two ranked lists with Reciprocal Rank Fusion to produce the top 8
+    chunks.
+
+    Args:
+        state: AgentState with rewritten_queries (or falls back to message).
+
+    Returns:
+        Updated AgentState with retrieved_chunks list (up to 8 fused results).
+    """
     queries = state.get("rewritten_queries") or [state["message"]]
     log.info("Hybrid retrieval | %d query variant(s)", len(queries))
     t0 = time.perf_counter()

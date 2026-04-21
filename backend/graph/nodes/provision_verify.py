@@ -15,6 +15,20 @@ log = get_logger(__name__)
 
 
 def provision_verify_node(state: AgentState) -> AgentState:
+    """Verify that provisioning actions took effect on the target systems.
+
+    Checks fulfillment_result for "gitea" and "mattermost" keys and calls
+    the corresponding client verify methods. Verification results are merged
+    back into fulfillment_result under a "verifications" key.
+
+    Args:
+        state: AgentState with fulfillment_result and employee_email set
+            by provision_fulfill_node.
+
+    Returns:
+        Updated AgentState with fulfillment_result enriched with verifications
+        dict mapping system name → bool.
+    """
     email = state["employee_email"]
     result = state.get("fulfillment_result") or {}
     log.info("Verifying provisioning | email=%s | systems=%s", email, list(result.keys()))

@@ -7,6 +7,22 @@ log = get_logger(__name__)
 
 
 def provision_request_node(state: AgentState) -> AgentState:
+    """Create database access request records for each matched package.
+
+    Inserts one access_request row per package with status "pending_approval"
+    and the manager as approver. Stores the first created request_id in state
+    and sets approval_status to "pending_approval". Failed individual package
+    requests are recorded as "ERROR:..." strings and logged rather than
+    aborting the entire operation.
+
+    Args:
+        state: AgentState with matched_packages, employee_id, employee_email,
+            and optionally employee_profile (to read manager_id).
+
+    Returns:
+        Updated AgentState with request_id, approval_status="pending_approval",
+        and status="pending_approval".
+    """
     packages = state.get("matched_packages") or []
     employee_id = state.get("employee_id") or ""
     email = state["employee_email"]

@@ -11,6 +11,15 @@ log = get_logger(__name__)
 
 @router.get("/approvals", response_model=list[PendingApproval])
 def list_approvals():
+    """Return all access requests currently in 'pending_approval' status.
+
+    Returns:
+        List of PendingApproval objects, each containing request_id, requester
+        details, matched packages, status, and created timestamp.
+
+    Raises:
+        HTTPException: 502 if the database query fails.
+    """
     log.info("GET /approvals — fetching pending requests")
     try:
         requests = list_access_requests(status="pending_approval")
@@ -37,6 +46,26 @@ def list_approvals():
 
 @router.post("/approvals/{request_id}", response_model=dict)
 async def decide_approval(request_id: str, body: ApprovalRequest):
+    """Record a manager's approval or denial decision for an access request.
+
+    When the decision is "approved", triggers async fulfillment via the
+    provisioning clients (Gitea/Mattermost). On fulfillment error, returns
+    the approved status with an additional fulfillment_error field so the
+    approval record is still preserved.
+
+    Args:
+        request_id: The AR-* identifier of the access request to decide on.
+        body: ApprovalRequest with decision ("approved" or "denied") and
+            approver_email.
+
+    Returns:
+        Dict with request_id and status. May include fulfillment_error on
+        partial failure.
+
+    Raises:
+        HTTPException: 400 if decision is not "approved" or "denied".
+        HTTPException: 502 if the database update fails.
+    """
     log.info(
         "POST /approvals/%s — decision=%s by %s",
         request_id,

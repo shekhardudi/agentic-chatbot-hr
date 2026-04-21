@@ -12,10 +12,30 @@ log = get_logger(__name__)
 
 
 def compose_response_node(state: AgentState) -> AgentState:
+    """Format the final user-facing Markdown response based on intent and worker output.
+
+    Handles each intent path separately:
+    - leave_balance: Renders a bullet list from leave_data.balances.
+    - leave_apply: Formats the success/failure result of the application.
+    - access_request_status: Renders a status table from access_requests_data.
+    - software_provision: Handles pending/fulfilled/ineligible states.
+    - policy_query: Passes through the LLM-generated answer unchanged.
+    - unsupported: Returns the standard out-of-scope message.
+
+    For other intents with a response already set, passes the text through
+    the fast LLM compose prompt for polish.
+
+    Args:
+        state: AgentState after all worker nodes have run.
+
+    Returns:
+        Updated AgentState with response set to the final Markdown string.
+    """
     intent = state.get("intent")
     log.info("Composing response | intent=%s | session=%s", intent, state.get("session_id"))
 
-    _no_llm_reformat = ("leave_balance", "leave_apply", "access_request_status")
+    # policy_query: policy_grade_answer already returns polished Markdown + citations
+    _no_llm_reformat = ("leave_balance", "leave_apply", "access_request_status", "policy_query")
     if state.get("response") and intent not in _no_llm_reformat:
         raw = state["response"]
         state["response"] = fast_chat(COMPOSE_PROMPT.format(answer=raw))

@@ -26,8 +26,7 @@ from graph.nodes.access_request_status import access_request_status_node
 from graph.nodes.policy_rewrite import policy_rewrite_node
 from graph.nodes.policy_retrieve import policy_retrieve_node
 from graph.nodes.policy_expand import policy_expand_node
-from graph.nodes.policy_grade import policy_grade_node
-from graph.nodes.policy_answer import policy_answer_node
+from graph.nodes.policy_grade_answer import policy_grade_answer_node
 from graph.nodes.provision_map import provision_map_node
 from graph.nodes.provision_eligibility import provision_eligibility_node
 from graph.nodes.provision_request import provision_request_node
@@ -38,6 +37,15 @@ from graph.nodes.audit import audit_node
 
 
 def _build_graph():
+    """Construct and compile the full LangGraph state machine.
+
+    Registers all 18+ nodes, wires the entry point to classify_intent,
+    connects conditional edges for intent routing and pipeline branching,
+    and returns a compiled executable graph.
+
+    Returns:
+        A compiled LangGraph CompiledGraph ready for ainvoke().
+    """
     g = StateGraph(AgentState)
 
     # Register all nodes
@@ -52,8 +60,7 @@ def _build_graph():
     g.add_node("policy_rewrite", policy_rewrite_node)
     g.add_node("policy_retrieve", policy_retrieve_node)
     g.add_node("policy_expand", policy_expand_node)
-    g.add_node("policy_grade", policy_grade_node)
-    g.add_node("policy_answer", policy_answer_node)
+    g.add_node("policy_grade_answer", policy_grade_answer_node)
     g.add_node("provision_map", provision_map_node)
     g.add_node("provision_eligibility", provision_eligibility_node)
     g.add_node("provision_request", provision_request_node)
@@ -118,12 +125,11 @@ def _build_graph():
     # Access request status
     g.add_edge("access_request_status", "compose_response")
 
-    # Policy RAG pipeline
+    # Policy RAG pipeline — grade+answer merged into one strong-model call
     g.add_edge("policy_rewrite", "policy_retrieve")
     g.add_edge("policy_retrieve", "policy_expand")
-    g.add_edge("policy_expand", "policy_grade")
-    g.add_edge("policy_grade", "policy_answer")
-    g.add_edge("policy_answer", "compose_response")
+    g.add_edge("policy_expand", "policy_grade_answer")
+    g.add_edge("policy_grade_answer", "compose_response")
 
     # Provisioning pipeline
     g.add_edge("provision_map", "provision_eligibility")
@@ -151,4 +157,12 @@ def _build_graph():
 
 @lru_cache(maxsize=1)
 def get_compiled_graph():
+    """Return the singleton compiled LangGraph instance.
+
+    Builds the graph on first call and caches it for the lifetime of the
+    process. Subsequent calls return the cached instance without rebuilding.
+
+    Returns:
+        The compiled LangGraph state machine.
+    """
     return _build_graph()

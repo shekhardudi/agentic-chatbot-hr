@@ -13,6 +13,19 @@ log = get_logger(__name__)
 
 
 def policy_rewrite_node(state: AgentState) -> AgentState:
+    """Expand the employee's question into 2–3 semantically varied search queries.
+
+    Calls the fast LLM with the query rewrite prompt and parses a JSON list of
+    query strings. The original message is always prepended to ensure it is
+    included. Falls back gracefully to [original_message] on parse failures.
+    The result is capped at 3 variants to control downstream search costs.
+
+    Args:
+        state: AgentState with the employee's message.
+
+    Returns:
+        Updated AgentState with rewritten_queries list (max 3 entries).
+    """
     log.info("Query rewrite | original=%r", state["message"][:80])
     prompt = QUERY_REWRITE_PROMPT.format(question=state["message"])
     raw = fast_chat(prompt)

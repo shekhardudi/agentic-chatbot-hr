@@ -14,6 +14,19 @@ _KEYWORD_MAP = {
 
 
 def provision_map_node(state: AgentState) -> AgentState:
+    """Map natural language software requests to known access package IDs.
+
+    Uses a keyword map to match system names from entities and the raw message
+    against known package keywords (e.g. "gitea", "github" → PKG-GH-ENG-STD).
+    Falls back to loading all packages from the database when no keywords match,
+    allowing the pipeline to continue even for unknown system names.
+
+    Args:
+        state: AgentState with entities.systems list and the original message.
+
+    Returns:
+        Updated AgentState with matched_packages list of package_id strings.
+    """
     entities = state.get("entities") or {}
     systems = [s.lower() for s in (entities.get("systems") or [])]
     message_lower = state["message"].lower()

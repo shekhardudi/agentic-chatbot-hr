@@ -15,6 +15,19 @@ _SYSTEM = (
 
 
 def clarify(state: AgentState) -> AgentState:
+    """Generate a targeted clarification question for ambiguous messages.
+
+    Triggered when classify_intent sets needs_clarification=True (confidence
+    below 0.6 and intent unsupported). Uses the fast LLM to ask the employee
+    a single focused question.
+
+    Args:
+        state: AgentState with the original employee message.
+
+    Returns:
+        Updated AgentState with response set to the clarification question and
+        status set to "needs_clarification".
+    """
     log.info("Requesting clarification | session=%s", state.get("session_id"))
     prompt = f"Employee message: {state['message']}\n\nAsk one clarification question."
     state["response"] = fast_chat(prompt, system=_SYSTEM)

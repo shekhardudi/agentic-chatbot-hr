@@ -10,6 +10,20 @@ log = get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 def _call_anthropic(prompt: str, system: str, model: str, max_tokens: int) -> str:
+    """Call the Anthropic Messages API with lazy client initialisation.
+
+    Reuses a module-level client instance across calls to avoid re-creating
+    the authenticated session on every request.
+
+    Args:
+        prompt: The user message content.
+        system: Optional system prompt string (omitted from request if empty).
+        model: Anthropic model identifier (e.g. "claude-haiku-4-5").
+        max_tokens: Maximum tokens to generate in the response.
+
+    Returns:
+        Tuple of (response_text, output_token_count).
+    """
     import anthropic
     client = getattr(_call_anthropic, "_client", None)
     if client is None:
@@ -24,6 +38,20 @@ def _call_anthropic(prompt: str, system: str, model: str, max_tokens: int) -> st
 
 
 def _call_openai(prompt: str, system: str, model: str, max_tokens: int) -> str:
+    """Call the OpenAI Chat Completions API with lazy client initialisation.
+
+    Reuses a module-level client instance across calls. Prepends a system
+    message only when a non-empty system string is provided.
+
+    Args:
+        prompt: The user message content.
+        system: Optional system prompt string (omitted from messages if empty).
+        model: OpenAI model identifier (e.g. "gpt-4o-mini").
+        max_tokens: Maximum tokens to generate in the response.
+
+    Returns:
+        Tuple of (response_text, output_token_count).
+    """
     import openai
     client = getattr(_call_openai, "_client", None)
     if client is None:

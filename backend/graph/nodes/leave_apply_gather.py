@@ -15,6 +15,22 @@ VALID_LEAVE_TYPES = {"annual", "sick", "personal"}
 
 
 def leave_apply_gather(state: AgentState) -> AgentState:
+    """Collect and validate leave application details from the employee message.
+
+    Checks whether leave_type (annual/sick/personal) and duration are present
+    in the classified entities. If either is missing, generates a clarification
+    question via the fast LLM and sets status to "needs_clarification". When
+    both are present, populates the leave_apply_* fields and sets status to
+    "ready" for the calculate step.
+
+    Args:
+        state: AgentState with entities extracted by classify_intent.
+
+    Returns:
+        Updated AgentState. On success: leave_apply_type, leave_apply_duration,
+        leave_apply_unit, and leave_apply_status="ready". On missing info:
+        response set to clarification question and status="needs_clarification".
+    """
     entities = state.get("entities") or {}
     leave_type = entities.get("leave_type")
     duration = entities.get("leave_duration")

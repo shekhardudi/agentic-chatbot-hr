@@ -21,6 +21,19 @@ class MattermostMCPClient:
         })
 
     def _api(self, method: str, path: str, **kwargs) -> dict | list:
+        """Make an authenticated request to the Mattermost API v4.
+
+        Args:
+            method: HTTP method string ("GET", "POST", etc.).
+            path: API path starting with "/" (e.g. "/users/email/alice@example.com").
+            **kwargs: Additional arguments passed to requests.Session.request().
+
+        Returns:
+            Parsed JSON response (dict or list), or empty dict for empty responses.
+
+        Raises:
+            requests.HTTPError: On any non-2xx response (logs the body first).
+        """
         url = f"{self.base_url}/api/v4{path}"
         _log.debug("Mattermost %s %s", method.upper(), path)
         resp = self.session.request(method, url, **kwargs)
@@ -37,6 +50,14 @@ class MattermostMCPClient:
     # ------------------------------------------------------------------
 
     def get_user_by_email(self, email: str) -> dict | None:
+        """Look up a Mattermost user by email address.
+
+        Args:
+            email: The user's email address.
+
+        Returns:
+            Mattermost user object dict, or None if not found.
+        """
         try:
             return self._api("GET", f"/users/email/{email}")
         except requests.HTTPError as e:
@@ -45,6 +66,14 @@ class MattermostMCPClient:
             raise
 
     def get_user_by_username(self, username: str) -> dict | None:
+        """Look up a Mattermost user by username.
+
+        Args:
+            username: The Mattermost username (login name).
+
+        Returns:
+            Mattermost user object dict, or None if not found.
+        """
         try:
             return self._api("GET", f"/users/username/{username}")
         except requests.HTTPError as e:
@@ -67,6 +96,14 @@ class MattermostMCPClient:
     # ------------------------------------------------------------------
 
     def get_team_by_name(self, team_name: str) -> dict | None:
+        """Look up a Mattermost team by its URL-safe name.
+
+        Args:
+            team_name: The team's name slug (e.g. "engineering").
+
+        Returns:
+            Mattermost team object dict, or None if not found.
+        """
         try:
             return self._api("GET", f"/teams/name/{team_name}")
         except requests.HTTPError as e:
@@ -75,6 +112,14 @@ class MattermostMCPClient:
             raise
 
     def create_team(self, team_name: str) -> dict:
+        """Create an open Mattermost team.
+
+        Args:
+            team_name: URL-safe team name slug.
+
+        Returns:
+            Created Mattermost team object dict.
+        """
         _log.info("Creating Mattermost team | team=%s", team_name)
         return self._api("POST", "/teams", json={
             "name": team_name,
@@ -83,12 +128,30 @@ class MattermostMCPClient:
         })
 
     def add_user_to_team(self, team_id: str, user_id: str) -> dict:
+        """Add a user to a Mattermost team.
+
+        Args:
+            team_id: Mattermost team ID string.
+            user_id: Mattermost user ID string.
+
+        Returns:
+            Team member object dict.
+        """
         return self._api("POST", f"/teams/{team_id}/members", json={
             "team_id": team_id,
             "user_id": user_id,
         })
 
     def is_user_in_team(self, team_id: str, user_id: str) -> bool:
+        """Check whether a user is a member of a Mattermost team.
+
+        Args:
+            team_id: Mattermost team ID string.
+            user_id: Mattermost user ID string.
+
+        Returns:
+            True if the user is a team member, False if not found.
+        """
         try:
             self._api("GET", f"/teams/{team_id}/members/{user_id}")
             return True
@@ -102,6 +165,15 @@ class MattermostMCPClient:
     # ------------------------------------------------------------------
 
     def get_channel_by_name(self, team_id: str, channel_name: str) -> dict | None:
+        """Look up a Mattermost channel by name within a team.
+
+        Args:
+            team_id: Mattermost team ID string.
+            channel_name: Channel name slug (e.g. "general").
+
+        Returns:
+            Mattermost channel object dict, or None if not found.
+        """
         try:
             return self._api("GET", f"/teams/{team_id}/channels/name/{channel_name}")
         except requests.HTTPError as e:
@@ -110,6 +182,15 @@ class MattermostMCPClient:
             raise
 
     def create_channel(self, team_id: str, channel_name: str) -> dict:
+        """Create an open Mattermost channel in the specified team.
+
+        Args:
+            team_id: Mattermost team ID string.
+            channel_name: URL-safe channel name slug.
+
+        Returns:
+            Created Mattermost channel object dict.
+        """
         _log.info("Creating Mattermost channel | team_id=%s | channel=%s", team_id, channel_name)
         return self._api("POST", "/channels", json={
             "team_id": team_id,
@@ -119,6 +200,15 @@ class MattermostMCPClient:
         })
 
     def add_user_to_channel(self, channel_id: str, user_id: str) -> dict:
+        """Add a user to a Mattermost channel.
+
+        Args:
+            channel_id: Mattermost channel ID string.
+            user_id: Mattermost user ID string.
+
+        Returns:
+            Channel member object dict.
+        """
         return self._api("POST", f"/channels/{channel_id}/members", json={
             "user_id": user_id,
         })
@@ -128,6 +218,20 @@ class MattermostMCPClient:
     # ------------------------------------------------------------------
 
     def provision(self, team_name: str, channels: list[str], user_email: str) -> dict:
+        """Idempotently provision a user into a Mattermost team and channels.
+
+        Looks up or creates the user (deriving username from email), looks up or
+        creates the team, adds the user to the team, then adds them to each
+        listed channel (creating channels that don't exist).
+
+        Args:
+            team_name: URL-safe team name slug.
+            channels: List of channel name slugs to join.
+            user_email: Employee email address.
+
+        Returns:
+            Dict with system, team, channels_joined, user_id, and team_added.
+        """
         _log.info("Mattermost provision | team=%s | channels=%s | user=%s", team_name, channels, user_email)
         user = self.get_user_by_email(user_email)
         if user is None:
@@ -174,6 +278,15 @@ class MattermostMCPClient:
         }
 
     def verify_access(self, team_name: str, user_email: str) -> bool:
+        """Verify whether a user is a member of a Mattermost team.
+
+        Args:
+            team_name: URL-safe team name slug.
+            user_email: Employee email address to look up.
+
+        Returns:
+            True if the user is a team member, False on any error or if not found.
+        """
         _log.debug("Mattermost verify access | team=%s | user=%s", team_name, user_email)
         try:
             user = self.get_user_by_email(user_email)

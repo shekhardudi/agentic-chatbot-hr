@@ -22,7 +22,19 @@ _SYSTEM_ALIASES: dict[str, str] = {
 
 
 def _resolve_target_systems(entities: dict, message: str) -> list[str] | None:
-    """Extract target_system values from entities and message keywords."""
+    """Extract normalised target_system values from entities and message keywords.
+
+    Maps user-facing system names (e.g. "github", "slack") to the canonical
+    target_system values stored in the database (e.g. "gitea", "mattermost").
+    Scans both the entities.systems list and the raw message text.
+
+    Args:
+        entities: Entities dict extracted by classify_intent.
+        message: The original employee message for keyword scanning.
+
+    Returns:
+        List of canonical target_system strings, or None if no systems matched.
+    """
     systems: set[str] = set()
     for s in (entities.get("systems") or []):
         mapped = _SYSTEM_ALIASES.get(s.lower())
@@ -37,6 +49,19 @@ def _resolve_target_systems(entities: dict, message: str) -> list[str] | None:
 
 
 def access_request_status_node(state: AgentState) -> AgentState:
+    """Fetch the employee's access request history from PostgreSQL.
+
+    Resolves any system name aliases in entities and message, then queries
+    access_requests joined with access_packages. Results are stored in
+    access_requests_data for compose_response to format.
+
+    Args:
+        state: AgentState with employee_id, entities, and message.
+
+    Returns:
+        Updated AgentState with access_requests_data list. Sets a fallback
+        response message when employee_id is missing.
+    """
     employee_id = state.get("employee_id")
 
     if not employee_id:
@@ -50,7 +75,11 @@ def access_request_status_node(state: AgentState) -> AgentState:
     target_systems = _resolve_target_systems(entities, state["message"])
 
     log.info("Access request status | employee_id=%s | request_id=%s | systems=%s", employee_id, request_id, target_systems)
-    requests = get_access_requests_by_employee(employee_id, request_id, target_systems)
+    requests = get_access_requests_by_employee(
+        employee_id=employee_id,
+        request_id=request_id,
+        target_systems=target_systems,
+    )
     state["access_requests_data"] = requests
     log.info("Access requests fetched | employee_id=%s | count=%d", employee_id, len(requests))
     return state

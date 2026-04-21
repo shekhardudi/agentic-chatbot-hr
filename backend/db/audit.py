@@ -10,7 +10,7 @@ from db.connection import ManagedConn
 log = get_logger(__name__)
 
 
-def write_audit_event(
+def write_audit_event(  # noqa: PLR0913
     session_id: str | None,
     employee_id: str | None,
     employee_email: str | None,
@@ -22,6 +22,24 @@ def write_audit_event(
     response_text: str | None = None,
     llm_trace: dict | None = None,
 ) -> None:
+    """Insert a full request trace into the audit_events table.
+
+    Called by the audit_node at the end of every graph execution.
+    All list/dict fields are serialised to JSON. Missing optional fields
+    default to empty collections rather than NULL.
+
+    Args:
+        session_id: UUID identifying the chat session.
+        employee_id: Internal employee identifier (may be None for unknown users).
+        employee_email: Employee email address.
+        intent: Classified intent label (e.g. "leave_balance").
+        worker: Worker name that handled the request (e.g. "hr_worker").
+        tools_called: List of tool/function names invoked during the request.
+        evidence_used: List of chunk metadata dicts used for RAG evidence.
+        outcome: Final outcome string (e.g. "complete", "pending_approval").
+        response_text: The final response delivered to the employee.
+        llm_trace: Dict with model metadata (fast_model, strong_model, etc.).
+    """
     log.debug(
         "Writing audit event | session=%s | employee=%s | intent=%s | worker=%s | outcome=%s",
         session_id, employee_email, intent, worker, outcome,
