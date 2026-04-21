@@ -124,23 +124,42 @@ The UI is at `http://localhost:8501`, backend at `http://localhost:8000`.
 
 ```
 backend/
-  api/          FastAPI routers (chat, approvals)
+  api/                  FastAPI routers (chat, approvals)
+  db/                   PostgreSQL helpers (HR, RAG, audit)
   graph/
-    nodes/      One file per LangGraph node
-    builder.py  Graph wiring
-    edges.py    Routing functions
-  llm/          LLM client + prompt files
-  db/           PostgreSQL helpers (RAG, HR, audit)
-  mcp/          NocoDB, Gitea, Mattermost clients
-  models/       AgentState TypedDict + API schemas
+    nodes/              LangGraph node implementations
+    builder.py          Graph wiring
+    edges.py            Intent routing
+  llm/                  LLM client + prompt files
+  mcp/                  NocoDB, Gitea, Mattermost clients
+  models/               AgentState + API schemas
+  main.py               FastAPI app entrypoint
 
 ui/
-  pages/        Streamlit pages (chat, approvals)
-  components/   Reusable UI components
+  app.py                Streamlit app entrypoint
+  pages/                Chat and approvals pages
+  components/           Reusable UI components
+  api_client.py         Backend API wrapper
 
-deployment/
-  terraform/    AWS infrastructure
-  systemd/      Service unit files
-  deploy.sh     Full deploy (Terraform)
-  update.sh     Hot-update running instance
+ingestion/
+  ingest.py             PDF -> chunks -> embeddings pipeline
+  chunker.py            Parent/child chunking logic
+  db.py                 policy_chunks upsert helpers
+  embedder.py           Embedding model loader
+  summarizer.py         Optional LLM summarization
+  output_markdown/      Parsed markdown output
+
+synthetic_data/
+  generate.py           Synthetic employee/access data generator
+  output/               Generated JSON files
+  sql/seed.sql          PostgreSQL seed script
+
+tests/
+  test_*.py             Unit tests for API, graph nodes, DB, MCP clients
+  conftest.py           Shared fixtures
+  pytest.ini            Test configuration
+
+docker-compose.yml      Local services (Postgres, NocoDB, Gitea, Mattermost)
+init-db.sh              Local DB initialization helper
+COMMANDS.txt            Runbook for local setup and execution
 ```
