@@ -18,18 +18,7 @@ An AI-powered HR assistant that handles leave management, policy queries, and so
 
 ## Architecture
 
-```
-Streamlit UI  →  FastAPI backend  →  LangGraph state machine
-                                          │
-                    ┌─────────────────────┼─────────────────────┐
-                    ▼                     ▼                     ▼
-              NocoDB (REST)         PostgreSQL             LLM (Claude / OpenAI)
-              leave balances        access requests        triage, rewrite, answer
-              employee data         policy chunks          
-                                    audit log             
-                    ▼                                           
-              Gitea + Mattermost (provisioning)
-```
+![alt text](ArchitectureFlow.png)
 
 **Pipeline per intent:**
 
