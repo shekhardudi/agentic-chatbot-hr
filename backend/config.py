@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # Backend
     backend_port: int = 8000
 
+    # Guardrails: PII detection and prompt-injection safeguards
+    guardrail_mode: str = "warn"  # "warn", "block_high_risk", or "strict"
+    guardrail_enabled_pii_categories: str = "email,phone,ssn,credit_card,bank_account,date_of_birth,address"
+    guardrail_detect_prompt_injection: bool = True
+    guardrail_audit_redact_pii: bool = True
+
     class Config:
         extra = "ignore"
 
@@ -57,6 +63,27 @@ class Settings(BaseSettings):
             f"host={self.postgres_host} port={self.postgres_port} "
             f"dbname={self.postgres_db} user={self.postgres_user} "
             f"password={self.postgres_password}"
+        )
+
+    def get_guardrail_config(self):
+        """Create a GuardrailConfig instance from this settings object."""
+        from guardrails.config import GuardrailConfig, GuardrailMode, PiiCategory
+
+        # Parse enabled categories from comma-separated string
+        enabled_categories = set()
+        for category_str in self.guardrail_enabled_pii_categories.split(","):
+            category_str = category_str.strip().lower()
+            try:
+                enabled_categories.add(PiiCategory(category_str))
+            except ValueError:
+                # Skip invalid categories
+                pass
+
+        return GuardrailConfig(
+            mode=GuardrailMode(self.guardrail_mode),
+            enabled_pii_categories=enabled_categories,
+            detect_prompt_injection=self.guardrail_detect_prompt_injection,
+            redact_audit_pii=self.guardrail_audit_redact_pii,
         )
 
 

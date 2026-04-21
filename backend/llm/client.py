@@ -2,6 +2,8 @@ import time
 
 from config import settings
 from logger import get_logger
+from guardrails.policy import GuardrailPolicy, GuardrailAction
+from guardrails.redactor import Redactor
 
 log = get_logger(__name__)
 
@@ -85,6 +87,57 @@ log.info("LLM provider: %s", _provider)
 
 
 # ---------------------------------------------------------------------------
+# Guardrail helpers
+# ---------------------------------------------------------------------------
+
+def _sanitize_prompt(prompt: str) -> str:
+    """Apply guardrail sanitization to prompt before LLM call."""
+    guardrail_config = settings.get_guardrail_config()
+    guardrail_policy = GuardrailPolicy(guardrail_config)
+    
+    decision = guardrail_policy.evaluate_llm_prompt(prompt)
+    log.debug("LLM prompt guardrail | action=%s | pii_count=%d | injection_count=%d",
+              decision.action.value,
+              len(decision.pii_detections),
+              len(decision.injection_detections))
+    
+    if decision.action == GuardrailAction.BLOCK:
+        log.warning("LLM prompt blocked by guardrails | reason=%s", decision.reason)
+        raise ValueError(f"Prompt rejected: {decision.reason}")
+    
+    # If PII detected in warn mode, still redact for the LLM call
+    if decision.pii_detections:
+        log.info("Redacting PII from LLM prompt")
+        redactor = Redactor(guardrail_config)
+        prompt = redactor.redact(prompt)
+    
+    return prompt
+
+
+def _filter_response(response: str) -> str:
+    """Apply guardrail filtering to LLM response before returning."""
+    guardrail_config = settings.get_guardrail_config()
+    guardrail_policy = GuardrailPolicy(guardrail_config)
+    
+    decision = guardrail_policy.evaluate_llm_response(response)
+    log.debug("LLM response guardrail | action=%s | pii_count=%d",
+              decision.action.value,
+              len(decision.pii_detections))
+    
+    if decision.action == GuardrailAction.BLOCK:
+        log.warning("LLM response blocked by guardrails | reason=%s", decision.reason)
+        raise ValueError(f"Response rejected: {decision.reason}")
+    
+    # Redact PII from response if detected
+    if decision.action == GuardrailAction.REDACT:
+        log.info("Redacting PII from LLM response")
+        redactor = Redactor(guardrail_config)
+        response = redactor.redact(response)
+    
+    return response
+
+
+# ---------------------------------------------------------------------------
 # Public API (unchanged signatures)
 # ---------------------------------------------------------------------------
 
@@ -92,9 +145,17 @@ def fast_chat(prompt: str, system: str = "") -> str:
     """Call the fast (Haiku / GPT-4o-mini) model. Use for routing, extraction, grading."""
     model = settings.llm_fast_model
     log.debug("LLM fast call | model=%s | prompt_len=%d", model, len(prompt))
+    
+    # Apply guardrail sanitization to prompt
+    prompt = _sanitize_prompt(prompt)
+    
     t0 = time.perf_counter()
     text, out_tokens = _call(prompt, system, model, 1024)
     elapsed = time.perf_counter() - t0
+    
+    # Apply guardrail filtering to response
+    text = _filter_response(text)
+    
     log.debug(
         "LLM fast done | model=%s | out_tokens=%d | elapsed=%.2fs",
         model, out_tokens, elapsed,
@@ -106,9 +167,17 @@ def strong_chat(prompt: str, system: str = "") -> str:
     """Call the strong (Sonnet / GPT-4o) model. Use for grounded answer generation."""
     model = settings.llm_strong_model
     log.debug("LLM strong call | model=%s | prompt_len=%d", model, len(prompt))
+    
+    # Apply guardrail sanitization to prompt
+    prompt = _sanitize_prompt(prompt)
+    
     t0 = time.perf_counter()
     text, out_tokens = _call(prompt, system, model, 2048)
     elapsed = time.perf_counter() - t0
+    
+    # Apply guardrail filtering to response
+    text = _filter_response(text)
+    
     log.info(
         "LLM strong done | model=%s | out_tokens=%d | elapsed=%.2fs",
         model, out_tokens, elapsed,

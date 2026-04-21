@@ -36,3 +36,35 @@ def configure_logging() -> None:
 
 def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
+
+
+def log_guardrail_event(
+    logger: logging.Logger,
+    action: str,
+    category: str,
+    session_id: str = None,
+    metadata: dict = None,
+) -> None:
+    """Log a structured guardrail event.
+    
+    Args:
+        logger: Logger instance to use
+        action: Guardrail action (allow/warn/block/redact)
+        category: Event category (inbound/prompt/response/audit)
+        session_id: Optional session ID for tracing
+        metadata: Optional dict with additional metadata
+    """
+    msg_parts = [f"Guardrail event | action={action} | category={category}"]
+    if session_id:
+        msg_parts.append(f"| session={session_id}")
+    if metadata:
+        for key, value in metadata.items():
+            msg_parts.append(f"| {key}={value}")
+    
+    message = " ".join(msg_parts)
+    
+    # Log as INFO for blocks/warnings, DEBUG for allow
+    if action in ("block", "warn", "redact"):
+        logger.warning(message)
+    else:
+        logger.debug(message)

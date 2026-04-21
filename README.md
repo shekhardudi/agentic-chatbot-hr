@@ -104,6 +104,10 @@ The UI is at `http://localhost:8501`, backend at `http://localhost:8000`.
 | `EMBEDDING_MODEL` | Embedding model used by backend/ingestion |
 | `EMBEDDING_DIMENSION` | Embedding vector dimension |
 | `BACKEND_PORT` | Backend port setting (app config; default `8000`) |
+| `GUARDRAIL_MODE` | Guardrail enforcement mode: `warn` (log only), `block_high_risk` (block SSN/card/bank terms), `strict` (block all PII); default `warn` |
+| `GUARDRAIL_ENABLED_PII_CATEGORIES` | Comma-separated list of PII types to detect: `email`, `phone`, `ssn`, `credit_card`, `bank_account`, `date_of_birth`, `address`; default: all |
+| `GUARDRAIL_DETECT_PROMPT_INJECTION` | Enable prompt-injection heuristics (default `true`) |
+| `GUARDRAIL_AUDIT_REDACT_PII` | Redact PII from audit logs before persisting (default `true`) |
 | `BACKEND_URL` | UI -> backend URL (default `http://localhost:8000`) |
 | `SERVICE_HOST` | UI service host for links (default `localhost`) |
 | `LOG_LEVEL` | Logging level for backend/ingestion (default `INFO`) |
@@ -152,3 +156,24 @@ docker-compose.yml      Local services (Postgres, NocoDB, Gitea, Mattermost)
 init-db.sh              Local DB initialization helper
 COMMANDS.txt            Runbook for local setup and execution
 ```
+
+## Guardrails: PII Detection & Prompt-Injection Safeguards
+
+The backend includes built-in guardrails to detect and handle sensitive data (PII) and prompt-injection attempts across the chat pipeline:
+
+**Inbound Requests** — Scans employee messages for PII (email, phone, SSN, credit cards, bank accounts, DOB, addresses) and prompt-injection patterns (ignore instructions, roleplay, negation directives, SQL injection).
+
+**LLM Prompts** — Sanitizes constructed prompts by redacting detected PII before sending to the LLM provider.
+
+**LLM Responses** — Filters generated responses and redacts any PII that may have been accidentally included by the model.
+
+**Audit Logs** — Optionally redacts PII from stored request/response text in the `audit_events` table.
+
+### Guardrail Modes
+
+- **`warn` (default)** — Log detections without blocking; proceed with sanitized/redacted text in LLM calls.
+- **`block_high_risk`** — Block requests containing high-risk PII (SSN, credit cards, bank accounts) or prompt injection; allow low-risk PII with warnings.
+- **`strict`** — Block any request or response containing detected PII or injection patterns.
+
+Configure via `GUARDRAIL_MODE` environment variable. See [Environment Variables](#environment-variables) for per-category and per-feature toggles.
+

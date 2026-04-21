@@ -264,3 +264,99 @@ class TestChatEndpoint:
             resp = client.post("/chat", json={"employee_email": "alice@example.com"})
 
         assert resp.status_code == 422
+
+    @patch("api.chat.GuardrailPolicy")
+    @patch("api.chat.get_compiled_graph")
+    def test_guardrail_allow_clean_message(self, mock_graph_factory, mock_policy_class):
+        """Test that clean messages pass guardrail checks."""
+        # Setup guardrail mock
+        mock_policy = MagicMock()
+        mock_decision = MagicMock()
+        mock_decision.action = "allow"
+        mock_decision.metadata = {}
+        mock_policy.evaluate_inbound.return_value = mock_decision
+        mock_policy_class.return_value = mock_policy
+
+        # Setup graph mock
+        final_state = _complete_state()
+        mock_graph = MagicMock()
+        mock_graph.ainvoke = AsyncMock(return_value=final_state)
+        mock_graph_factory.return_value = mock_graph
+
+        from fastapi import FastAPI
+        from api.chat import router
+        app = FastAPI()
+        app.include_router(router)
+
+        with TestClient(app) as client:
+            resp = client.post("/chat", json={
+                "employee_email": "alice@example.com",
+                "message": "How many leave days do I have?",
+            })
+
+        assert resp.status_code == 200
+        assert mock_policy.evaluate_inbound.called
+
+    @patch("api.chat.GuardrailPolicy")
+    @patch("api.chat.get_compiled_graph")
+    def test_guardrail_blocks_high_risk_request(self, mock_graph_factory, mock_policy_class):
+        """Test that requests with high-risk PII are blocked."""
+        # Setup guardrail mock to return BLOCK action
+        mock_policy = MagicMock()
+        mock_decision = MagicMock()
+        mock_decision.action = "block"
+        mock_decision.reason = "Blocking request with high-risk PII: ssn"
+        mock_decision.metadata = {"pii_categories": ["ssn"]}
+        mock_policy.evaluate_inbound.return_value = mock_decision
+        mock_policy_class.return_value = mock_policy
+
+        from fastapi import FastAPI
+        from api.chat import router
+        app = FastAPI()
+        app.include_router(router)
+
+        with TestClient(app, raise_server_exceptions=False) as client:
+            resp = client.post("/chat", json={
+                "employee_email": "alice@example.com",
+                "message": "My SSN is 123-45-6789",
+            })
+
+        assert resp.status_code == 400
+        body = resp.json()
+        assert "rejected" in body["detail"].lower()
+
+    @patch("api.chat.GuardrailPolicy")
+    @patch("api.chat.get_compiled_graph")
+    def test_guardrail_warn_but_allow_in_warn_mode(self, mock_graph_factory, mock_policy_class):
+        """Test that warn mode logs but still allows the request."""
+        # Setup guardrail mock to return WARN action
+        mock_policy = MagicMock()
+        mock_decision = MagicMock()
+        mock_decision.action = "warn"
+        mock_decision.reason = "PII detected: email"
+        mock_decision.metadata = {"pii_categories": ["email"], "pii_count": 1}
+        mock_policy.evaluate_inbound.return_value = mock_decision
+        mock_policy_class.return_value = mock_policy
+
+        # Setup graph mock
+        final_state = _complete_state()
+        mock_graph = MagicMock()
+        mock_graph.ainvoke = AsyncMock(return_value=final_state)
+        mock_graph_factory.return_value = mock_graph
+
+        from fastapi import FastAPI
+        from api.chat import router
+        app = FastAPI()
+        app.include_router(router)
+
+        with TestClient(app) as client:
+            resp = client.post("/chat", json={
+                "employee_email": "alice@example.com",
+                "message": "Contact me at bob@example.com",
+            })
+
+        # Should still succeed in warn mode
+        assert resp.status_code == 200
+        # Graph should still be invoked
+        assert mock_graph.ainvoke.called
+

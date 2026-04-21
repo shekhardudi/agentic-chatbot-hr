@@ -185,3 +185,13 @@ BACKEND_PORT=8000
 BACKEND_URL=http://localhost:8000
 SERVICE_HOST=localhost
 LOG_LEVEL=INFO
+
+# Guardrails: PII detection and prompt-injection safeguards
+# Modes: warn (default, log only), block_high_risk (block SSN/card/bank), strict (block all)
+GUARDRAIL_MODE=warn
+# PII types to detect: email, phone, ssn, credit_card, bank_account, date_of_birth, address
+GUARDRAIL_ENABLED_PII_CATEGORIES=email,phone,ssn,credit_card,bank_account,date_of_birth,address
+# Enable prompt-injection detection (true/false)
+GUARDRAIL_DETECT_PROMPT_INJECTION=true
+# Redact PII from audit logs (true/false)
+GUARDRAIL_AUDIT_REDACT_PII=true

@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException
 from logger import get_logger
 from models.schemas import ChatRequest, ChatResponse, Citation
 from graph.builder import get_compiled_graph
+from config import settings
+from guardrails.policy import GuardrailPolicy, GuardrailAction
 
 router = APIRouter()
 log = get_logger(__name__)
@@ -83,6 +85,36 @@ async def chat(request: ChatRequest):
         "citations": [],
         "status": "complete",
     }
+
+    # Guardrail check on inbound request
+    guardrail_config = settings.get_guardrail_config()
+    guardrail_policy = GuardrailPolicy(guardrail_config)
+    guardrail_decision = guardrail_policy.evaluate_inbound(request.message)
+    
+    # Annotate state with guardrail metadata
+    initial_state["guardrail_action"] = guardrail_decision.action.value
+    initial_state["guardrail_metadata"] = guardrail_decision.metadata
+    
+    # Log guardrail decision
+    log.info(
+        "Guardrail check | session=%s | action=%s | reason=%s | metadata=%s",
+        session_id,
+        guardrail_decision.action.value,
+        guardrail_decision.reason,
+        guardrail_decision.metadata,
+    )
+    
+    # Determine if request should be blocked
+    if guardrail_decision.action == GuardrailAction.BLOCK:
+        log.warning(
+            "Request blocked by guardrails | session=%s | reason=%s",
+            session_id,
+            guardrail_decision.reason,
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Request rejected: {guardrail_decision.reason}",
+        )
 
     try:
         graph = get_compiled_graph()

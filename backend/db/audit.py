@@ -6,8 +6,23 @@ from datetime import datetime, timezone
 
 from logger import get_logger
 from db.connection import ManagedConn
+from config import settings
+from guardrails.redactor import Redactor
 
 log = get_logger(__name__)
+
+
+def _apply_audit_redaction(response_text: str | None) -> str | None:
+    """Apply PII redaction to audit log entries if enabled in config."""
+    if not response_text:
+        return response_text
+    
+    guardrail_config = settings.get_guardrail_config()
+    if not guardrail_config.redact_audit_pii:
+        return response_text
+    
+    redactor = Redactor(guardrail_config)
+    return redactor.redact_for_audit(response_text)
 
 
 def write_audit_event(  # noqa: PLR0913
@@ -44,6 +59,10 @@ def write_audit_event(  # noqa: PLR0913
         "Writing audit event | session=%s | employee=%s | intent=%s | worker=%s | outcome=%s",
         session_id, employee_email, intent, worker, outcome,
     )
+    
+    # Apply guardrail redaction to response_text if enabled
+    redacted_response_text = _apply_audit_redaction(response_text)
+    
     sql = """
         INSERT INTO audit_events (
             event_ts, session_id, employee_id, employee_email,
@@ -70,7 +89,7 @@ def write_audit_event(  # noqa: PLR0913
                     json.dumps(tools_called or []),
                     json.dumps(evidence_used or []),
                     outcome,
-                    response_text,
+                    redacted_response_text,
                     json.dumps(llm_trace or {}),
                 ),
             )
